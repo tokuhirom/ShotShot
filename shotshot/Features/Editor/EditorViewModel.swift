@@ -10,7 +10,7 @@ final class EditorViewModel {
     var selectedTool: ToolType = .arrow
     var selectedColor: NSColor = NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0) // Skitch Pink
     var lineWidth: CGFloat = 3.0
-    var fontSize: CGFloat = 16.0
+    var fontSize: CGFloat = 32.0
     var statusMessage: String = ""
 
     // Undo/Redo stacks
@@ -115,6 +115,20 @@ final class EditorViewModel {
         saveStateForUndo()
         annotations.append(annotation)
         currentAnnotation = nil
+    }
+
+    func addTextAnnotation(at point: CGPoint, text: String) {
+        let annotation = Annotation(
+            type: .text,
+            startPoint: point,
+            endPoint: point,
+            color: selectedColor,
+            lineWidth: lineWidth,
+            text: text,
+            fontSize: fontSize
+        )
+        saveStateForUndo()
+        annotations.append(annotation)
     }
 
     func getCurrentAnnotation() -> Annotation? {
@@ -262,12 +276,12 @@ final class EditorViewModel {
     }
 
     private func textContainsPoint(_ annotation: Annotation, _ point: CGPoint) -> Bool {
-        guard let text = annotation.text else { return false }
+        guard let text = annotation.text, !text.isEmpty else { return false }
         let fontSize = annotation.fontSize ?? 16.0
 
-        // テキストの大まかなサイズを推定
-        let estimatedWidth = CGFloat(text.count) * fontSize * 0.6
-        let estimatedHeight = fontSize * 1.2
+        // テキストの大まかなサイズを推定（日本語も考慮して1文字≒fontSizeとする）
+        let estimatedWidth = max(CGFloat(text.count) * fontSize * 0.8, 50)
+        let estimatedHeight = fontSize * 1.5
 
         let rect = CGRect(
             x: annotation.endPoint.x,
@@ -275,7 +289,7 @@ final class EditorViewModel {
             width: estimatedWidth,
             height: estimatedHeight
         )
-        let expandedRect = rect.insetBy(dx: -10, dy: -10)
+        let expandedRect = rect.insetBy(dx: -15, dy: -15)
         return expandedRect.contains(point)
     }
 

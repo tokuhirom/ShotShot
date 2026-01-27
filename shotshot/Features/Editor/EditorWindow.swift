@@ -30,14 +30,18 @@ struct EditorWindow: View {
         )
     }
 
-    private static let presetColors: [NSColor] = [
-        NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0), // Skitch Pink
-        NSColor(red: 1.0, green: 0.23, blue: 0.19, alpha: 1.0),  // Red
-        NSColor(red: 1.0, green: 0.58, blue: 0.0, alpha: 1.0),   // Orange
-        NSColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0),    // Yellow
-        NSColor(red: 0.3, green: 0.85, blue: 0.39, alpha: 1.0),  // Green
-        NSColor(red: 0.0, green: 0.48, blue: 1.0, alpha: 1.0),   // Blue
+    private static let presetColors: [(String, NSColor)] = [
+        ("ピンク", NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0)),
+        ("赤", NSColor(red: 1.0, green: 0.23, blue: 0.19, alpha: 1.0)),
+        ("オレンジ", NSColor(red: 1.0, green: 0.58, blue: 0.0, alpha: 1.0)),
+        ("黄", NSColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0)),
+        ("緑", NSColor(red: 0.3, green: 0.85, blue: 0.39, alpha: 1.0)),
+        ("青", NSColor(red: 0.0, green: 0.48, blue: 1.0, alpha: 1.0)),
+        ("白", NSColor.white),
+        ("黒", NSColor.black),
     ]
+
+    private static let fontSizes: [CGFloat] = [16, 24, 32, 48, 64, 80, 96]
 
     private var toolbar: some View {
         HStack(spacing: 12) {
@@ -52,28 +56,38 @@ struct EditorWindow: View {
             Divider()
                 .frame(height: 24)
 
-            // Preset color buttons
-            HStack(spacing: 4) {
-                ForEach(0..<Self.presetColors.count, id: \.self) { index in
-                    let color = Self.presetColors[index]
-                    ColorButton(
-                        color: color,
-                        isSelected: viewModel.selectedColor == color,
-                        action: { viewModel.selectedColor = color }
-                    )
-                }
-
-                // Custom color picker
-                ColorPicker("", selection: $viewModel.selectedColorBinding)
-                    .labelsHidden()
-                    .frame(width: 24, height: 24)
-            }
+            // 色選択ボタン（Popover）
+            ColorPickerButton(selectedColor: $viewModel.selectedColor, presetColors: Self.presetColors)
 
             Divider()
                 .frame(height: 24)
 
-            Slider(value: $viewModel.lineWidth, in: 1...20)
-                .frame(width: 100)
+            // テキストモード時はフォントサイズ、それ以外は線幅
+            if viewModel.selectedTool == .text {
+                Menu {
+                    ForEach(Self.fontSizes, id: \.self) { size in
+                        Button("\(Int(size)) pt") {
+                            viewModel.fontSize = size
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("\(Int(viewModel.fontSize)) pt")
+                            .monospacedDigit()
+                        Image(systemName: "chevron.down")
+                            .font(.caption)
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .frame(width: 70)
+            } else {
+                HStack(spacing: 4) {
+                    Text("太さ")
+                        .font(.caption)
+                    Slider(value: $viewModel.lineWidth, in: 1...20)
+                        .frame(width: 80)
+                }
+            }
 
             Spacer()
 
@@ -146,7 +160,6 @@ struct EditorWindow: View {
                 viewModel.cancel()
             }
             .buttonStyle(.bordered)
-            .keyboardShortcut(.escape, modifiers: [])
 
             Button("Done") {
                 viewModel.done()
@@ -209,6 +222,94 @@ struct ColorButton: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct ColorSwatch: View {
+    let color: NSColor
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            // 白い縁取り
+            Circle()
+                .fill(Color.white)
+                .frame(width: size, height: size)
+            // メインカラー
+            Circle()
+                .fill(Color(nsColor: color))
+                .frame(width: size - 3, height: size - 3)
+        }
+        .overlay(
+            Circle()
+                .strokeBorder(Color.black.opacity(0.2), lineWidth: 0.5)
+        )
+    }
+}
+
+struct ColorPickerButton: View {
+    @Binding var selectedColor: NSColor
+    let presetColors: [(String, NSColor)]
+    @State private var showPopover = false
+
+    var body: some View {
+        Button(action: { showPopover.toggle() }) {
+            HStack(spacing: 4) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 22, height: 22)
+                    Circle()
+                        .fill(Color(nsColor: selectedColor))
+                        .frame(width: 18, height: 18)
+                }
+                .overlay(Circle().strokeBorder(Color.black.opacity(0.2), lineWidth: 0.5))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showPopover, arrowEdge: .bottom) {
+            VStack(spacing: 8) {
+                // 色グリッド (4x2)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 28))], spacing: 6) {
+                    ForEach(0..<presetColors.count, id: \.self) { index in
+                        let (_, color) = presetColors[index]
+                        Button(action: {
+                            selectedColor = color
+                            showPopover = false
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 26, height: 26)
+                                Circle()
+                                    .fill(Color(nsColor: color))
+                                    .frame(width: 22, height: 22)
+                                if selectedColor.isEqual(to: color) {
+                                    Circle()
+                                        .strokeBorder(Color.accentColor, lineWidth: 2)
+                                        .frame(width: 28, height: 28)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                Divider()
+
+                // カスタムカラーピッカー
+                ColorPicker("カスタム色", selection: Binding(
+                    get: { Color(nsColor: selectedColor) },
+                    set: { selectedColor = NSColor($0) }
+                ))
+                .labelsHidden()
+            }
+            .padding(10)
+            .frame(width: 140)
+        }
     }
 }
 

@@ -19,6 +19,7 @@ struct AnnotationCanvas: View {
     @State private var isResizingAnnotation = false
     @State private var activeResizeHandle: ResizeHandle? = nil
     @State private var dragStartPoint: CGPoint = .zero
+    @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
         ZStack {
@@ -55,18 +56,53 @@ struct AnnotationCanvas: View {
             )
 
             if isEditing && viewModel.selectedTool == .text {
-                TextField("テキストを入力", text: $editingText, onCommit: {
-                    finishTextEditing()
-                })
-                .textFieldStyle(.plain)
-                .font(.system(size: viewModel.fontSize))
-                .foregroundColor(Color(nsColor: viewModel.selectedColor))
-                .position(editingPosition)
+                VStack {
+                    HStack {
+                        ZStack(alignment: .leading) {
+                            // 縁取り用テキスト（白）
+                            let strokeWidth: CGFloat = viewModel.fontSize * 0.08
+                            let offsets: [(CGFloat, CGFloat)] = [
+                                (-strokeWidth, -strokeWidth), (0, -strokeWidth), (strokeWidth, -strokeWidth),
+                                (-strokeWidth, 0), (strokeWidth, 0),
+                                (-strokeWidth, strokeWidth), (0, strokeWidth), (strokeWidth, strokeWidth)
+                            ]
+                            ForEach(0..<offsets.count, id: \.self) { i in
+                                Text(editingText.isEmpty ? " " : editingText)
+                                    .font(.system(size: viewModel.fontSize, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .offset(x: offsets[i].0, y: offsets[i].1)
+                            }
+
+                            // 入力フィールド
+                            TextField("", text: $editingText, onCommit: {
+                                finishTextEditing()
+                            })
+                            .textFieldStyle(.plain)
+                            .font(.system(size: viewModel.fontSize, weight: .bold))
+                            .foregroundColor(Color(nsColor: viewModel.selectedColor))
+                            .focused($isTextFieldFocused)
+                        }
+                        .fixedSize()
+                        Spacer()
+                    }
+                    .padding(.leading, editingPosition.x)
+                    .padding(.top, editingPosition.y)
+                    Spacer()
+                }
+                .onAppear {
+                    isTextFieldFocused = true
+                }
             }
         }
     }
 
     private func handleDrag(_ value: DragGesture.Value) {
+        // テキスト編集中に他の場所をクリックしたら編集を終了
+        if isEditing {
+            finishTextEditing()
+            return
+        }
+
         let scale = CGSize(
             width: imageSize.width / canvasSize.width,
             height: imageSize.height / canvasSize.height
@@ -99,9 +135,12 @@ struct AnnotationCanvas: View {
                 isDraggingAnnotation = true
                 dragStartPoint = scaledStart
             } else {
-                // ヒットなし → 選択解除して新規注釈作成
+                // ヒットなし → 選択解除
                 viewModel.deselectAnnotation()
-                viewModel.startAnnotation(at: scaledStart)
+                // テキストツール以外は新規注釈作成開始
+                if viewModel.selectedTool != .text {
+                    viewModel.startAnnotation(at: scaledStart)
+                }
             }
         }
 
@@ -115,7 +154,7 @@ struct AnnotationCanvas: View {
             )
             viewModel.moveSelectedAnnotation(by: delta)
             dragStartPoint = scaledCurrent
-        } else {
+        } else if viewModel.selectedTool != .text {
             viewModel.updateAnnotation(to: scaledCurrent)
         }
     }
@@ -243,7 +282,7 @@ struct AnnotationCanvas: View {
             y: editingPosition.y * scale.height
         )
 
-        viewModel.finishAnnotation(at: scaledPosition, text: editingText)
+        viewModel.addTextAnnotation(at: scaledPosition, text: editingText)
         isEditing = false
         editingText = ""
     }
@@ -342,12 +381,26 @@ struct AnnotationCanvas: View {
     }
 
     private func drawText(_ text: String, at point: CGPoint, color: NSColor, fontSize: CGFloat, context: inout GraphicsContext) {
-        let attributedString = AttributedString(text)
-        let textView = Text(attributedString)
-            .font(.system(size: fontSize))
-            .foregroundColor(Color(nsColor: color))
+        // 白い縁取り
+        let strokeWidth: CGFloat = fontSize * 0.08
+        let offsets: [(CGFloat, CGFloat)] = [
+            (-strokeWidth, -strokeWidth), (0, -strokeWidth), (strokeWidth, -strokeWidth),
+            (-strokeWidth, 0), (strokeWidth, 0),
+            (-strokeWidth, strokeWidth), (0, strokeWidth), (strokeWidth, strokeWidth)
+        ]
 
-        context.draw(textView, at: point, anchor: .topLeading)
+        for offset in offsets {
+            let outlineText = Text(text)
+                .font(.system(size: fontSize, weight: .bold))
+                .foregroundColor(.white)
+            context.draw(outlineText, at: CGPoint(x: point.x + offset.0, y: point.y + offset.1), anchor: .topLeading)
+        }
+
+        // メインテキスト
+        let mainText = Text(text)
+            .font(.system(size: fontSize, weight: .bold))
+            .foregroundColor(Color(nsColor: color))
+        context.draw(mainText, at: point, anchor: .topLeading)
     }
 
     private func drawRectangle(from start: CGPoint, to end: CGPoint, color: NSColor, lineWidth: CGFloat, context: inout GraphicsContext) {

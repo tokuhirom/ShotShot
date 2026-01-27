@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var hotkeyManager: HotkeyManager?
     private var captureManager: CaptureManager?
     private var editorWindows: Set<NSWindow> = []
+    private var settingsWindow: NSWindow?
     private var keyEventMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -15,6 +16,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setupHotkey()
         setupCaptureManager()
         setupKeyEventMonitor()
+        setupHotkeyChangeObserver()
+    }
+
+    private func setupHotkeyChangeObserver() {
+        NotificationCenter.default.addObserver(
+            forName: .hotkeySettingsChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.hotkeyManager?.reregister()
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -145,7 +159,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func openSettings() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        // 既存のウィンドウがあれば前面に
+        if let window = settingsWindow, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let settingsView = SettingsView()
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 450, height: 280),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "ShotShot 設定"
+        window.contentView = NSHostingView(rootView: settingsView)
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.makeKeyAndOrderFront(nil)
+
+        settingsWindow = window
         NSApp.activate(ignoringOtherApps: true)
     }
 

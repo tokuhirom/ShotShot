@@ -3,6 +3,10 @@ import Carbon
 import Foundation
 import SwiftUI
 
+extension Notification.Name {
+    static let hotkeySettingsChanged = Notification.Name("hotkeySettingsChanged")
+}
+
 @Observable
 @MainActor
 final class SettingsViewModel {
@@ -68,7 +72,10 @@ final class SettingsViewModel {
         settings.hotkeyModifiers = modifiers
         settings.hotkeyKeyCode = keyCode
 
-        hotkeyStatus = "ホットキーを更新しました（再起動後に有効）"
+        // ホットキーを即時再登録
+        NotificationCenter.default.post(name: .hotkeySettingsChanged, object: nil)
+
+        hotkeyStatus = "ホットキーを更新しました"
         hotkeyStatusIsError = false
     }
 

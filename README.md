@@ -1,4 +1,4 @@
-# shotshot
+# ShotShot
 
 macOS用のスクリーンショットツール。Skitch風のUXで、領域選択でキャプチャし、矢印・テキスト・モザイクの注釈を追加可能。
 
@@ -7,11 +7,12 @@ macOS用のスクリーンショットツール。Skitch風のUXで、領域選�
 - **メニューバー常駐**: アプリはメニューバーに常駐
 - **グローバルホットキー**: デフォルト Ctrl+Shift+4 でキャプチャ開始
 - **領域選択キャプチャ**: ScreenCaptureKit使用
+- **Retina対応**: @2x でキャプチャ、ファイル名にも反映
 - **注釈機能**:
   - 矢印（色・太さ変更可）
   - テキスト（フォント・サイズ・色変更可）
   - モザイク（ピクセル化）
-- **画像保存**: PNG形式、デフォルト ~/Pictures/shotshot/
+- **画像保存**: PNG形式、デフォルト ~/Pictures/ShotShot/
 - **クリップボードコピー**: 撮影後自動コピー
 
 ## 必要環境
@@ -20,7 +21,9 @@ macOS用のスクリーンショットツール。Skitch風のUXで、領域選�
 - Xcode 16.0+
 - Swift 6
 
-## ビルド
+## 開発
+
+### ビルド
 
 ```bash
 # デバッグビルド
@@ -30,10 +33,25 @@ macOS用のスクリーンショットツール。Skitch風のUXで、領域選�
 ./scripts/build.sh release
 ```
 
-または Xcode で直接ビルド:
+### 実行
+
+```bash
+# 最新のビルドを起動（なければ自動でビルド）
+./scripts/run.sh
+```
+
+### Xcode で直接ビルド
 
 ```bash
 xcodebuild -project shotshot.xcodeproj -scheme shotshot -configuration Debug build
+```
+
+### ビルド成果物の場所
+
+ビルドされたアプリは以下に出力されます:
+
+```
+~/Library/Developer/Xcode/DerivedData/shotshot-*/Build/Products/Debug/ShotShot.app
 ```
 
 ## 使い方

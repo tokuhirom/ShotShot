@@ -33,11 +33,10 @@ xcodebuild \
 
 echo "Build completed successfully!"
 
-BUILD_DIR="$PROJECT_DIR/build"
 if [ "$CONFIGURATION" == "Debug" ]; then
-    APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "shotshot.app" -path "*Debug*" 2>/dev/null | head -1)
+    APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "ShotShot.app" -path "*shotshot*Debug*" -type d 2>/dev/null | head -1)
 else
-    APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "shotshot.app" -path "*Release*" 2>/dev/null | head -1)
+    APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "ShotShot.app" -path "*shotshot*Release*" -type d 2>/dev/null | head -1)
 fi
 
 if [ -n "$APP_PATH" ]; then

@@ -320,6 +320,27 @@ enum ToolType: CaseIterable {
     case text
     case mosaic
 
+    var name: String {
+        switch self {
+        case .select: return "select"
+        case .arrow: return "arrow"
+        case .rectangle: return "rectangle"
+        case .text: return "text"
+        case .mosaic: return "mosaic"
+        }
+    }
+
+    static func from(name: String) -> ToolType {
+        switch name {
+        case "select": return .select
+        case "arrow": return .arrow
+        case "rectangle": return .rectangle
+        case "text": return .text
+        case "mosaic": return .mosaic
+        default: return .select
+        }
+    }
+
     var iconName: String {
         switch self {
         case .select: return "arrow.up.left"

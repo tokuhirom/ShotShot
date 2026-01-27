@@ -7,10 +7,18 @@ import SwiftUI
 final class EditorViewModel {
     let screenshot: Screenshot
     var annotations: [Annotation] = []
-    var selectedTool: ToolType = .select
-    var selectedColor: NSColor = NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0) // Skitch Pink
-    var lineWidth: CGFloat = 3.0
-    var fontSize: CGFloat = 32.0
+    var selectedTool: ToolType {
+        didSet { AppSettings.shared.selectedToolName = selectedTool.name }
+    }
+    var selectedColor: NSColor {
+        didSet { AppSettings.shared.selectedColor = selectedColor }
+    }
+    var lineWidth: CGFloat {
+        didSet { AppSettings.shared.lineWidth = lineWidth }
+    }
+    var fontSize: CGFloat {
+        didSet { AppSettings.shared.fontSize = fontSize }
+    }
     var statusMessage: String = ""
 
     // Undo/Redo stacks
@@ -32,6 +40,12 @@ final class EditorViewModel {
 
     init(screenshot: Screenshot) {
         self.screenshot = screenshot
+        // AppSettingsから前回の設定を読み込み
+        let settings = AppSettings.shared
+        self.selectedTool = ToolType.from(name: settings.selectedToolName)
+        self.selectedColor = settings.selectedColor
+        self.lineWidth = settings.lineWidth
+        self.fontSize = settings.fontSize
     }
 
     // MARK: - Undo/Redo

@@ -1,6 +1,13 @@
 import AppKit
 import SwiftUI
 
+enum ResizeHandle {
+    case startPoint      // startPoint を動かす
+    case endPoint        // endPoint を動かす
+    case startXEndY      // startPoint.x と endPoint.y を動かす（四角形用）
+    case endXStartY      // endPoint.x と startPoint.y を動かす（四角形用）
+}
+
 struct AnnotationCanvas: View {
     @Bindable var viewModel: EditorViewModel
     let canvasSize: CGSize
@@ -8,6 +15,10 @@ struct AnnotationCanvas: View {
     @State private var isEditing = false
     @State private var editingText = ""
     @State private var editingPosition: CGPoint = .zero
+    @State private var isDraggingAnnotation = false
+    @State private var isResizingAnnotation = false
+    @State private var activeResizeHandle: ResizeHandle? = nil
+    @State private var dragStartPoint: CGPoint = .zero
 
     var body: some View {
         ZStack {
@@ -18,7 +29,15 @@ struct AnnotationCanvas: View {
                 )
 
                 for annotation in viewModel.annotations {
-                    drawAnnotation(annotation, context: &context, scale: scale)
+                    // モザイクはcompositeImageで適用済みなのでスキップ
+                    if annotation.type != .mosaic {
+                        drawAnnotation(annotation, context: &context, scale: scale)
+                    }
+
+                    // 選択中の注釈に枠を表示
+                    if annotation.id == viewModel.selectedAnnotationId {
+                        drawSelectionIndicator(for: annotation, context: &context, scale: scale)
+                    }
                 }
 
                 if let current = viewModel.getCurrentAnnotation() {
@@ -62,10 +81,43 @@ struct AnnotationCanvas: View {
             y: value.location.y * scale.height
         )
 
-        if viewModel.getCurrentAnnotation() == nil {
-            viewModel.startAnnotation(at: scaledStart)
+        // ドラッグ開始時
+        if viewModel.getCurrentAnnotation() == nil && !isDraggingAnnotation && !isResizingAnnotation {
+            // 選択中の注釈がある場合、まずリサイズハンドルをチェック
+            if let selectedId = viewModel.selectedAnnotationId,
+               let annotation = viewModel.annotations.first(where: { $0.id == selectedId }),
+               let handle = hitTestResizeHandle(annotation: annotation, point: value.startLocation, scale: scale) {
+                // リサイズハンドルをヒット → リサイズモード
+                viewModel.saveStateForUndo()
+                isResizingAnnotation = true
+                activeResizeHandle = handle
+                dragStartPoint = scaledStart
+            } else if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
+                // 既存の注釈をヒット → 選択・移動モード
+                viewModel.saveStateForUndo()
+                viewModel.selectAnnotation(id: hitAnnotation.id)
+                isDraggingAnnotation = true
+                dragStartPoint = scaledStart
+            } else {
+                // ヒットなし → 選択解除して新規注釈作成
+                viewModel.deselectAnnotation()
+                viewModel.startAnnotation(at: scaledStart)
+            }
         }
-        viewModel.updateAnnotation(to: scaledCurrent)
+
+        // ドラッグ中
+        if isResizingAnnotation, let handle = activeResizeHandle {
+            viewModel.resizeSelectedAnnotation(handle: handle, to: scaledCurrent)
+        } else if isDraggingAnnotation {
+            let delta = CGPoint(
+                x: scaledCurrent.x - dragStartPoint.x,
+                y: scaledCurrent.y - dragStartPoint.y
+            )
+            viewModel.moveSelectedAnnotation(by: delta)
+            dragStartPoint = scaledCurrent
+        } else {
+            viewModel.updateAnnotation(to: scaledCurrent)
+        }
     }
 
     private func handleDragEnd(_ value: DragGesture.Value) {
@@ -79,11 +131,98 @@ struct AnnotationCanvas: View {
             y: value.location.y * scale.height
         )
 
-        if viewModel.selectedTool == .text {
+        if isResizingAnnotation {
+            // リサイズ完了
+            isResizingAnnotation = false
+            activeResizeHandle = nil
+        } else if isDraggingAnnotation {
+            // 移動完了
+            isDraggingAnnotation = false
+        } else if viewModel.selectedTool == .text {
             editingPosition = value.location
             isEditing = true
         } else {
             viewModel.finishAnnotation(at: scaledEnd)
+        }
+    }
+
+    private func hitTestResizeHandle(annotation: Annotation, point: CGPoint, scale: CGSize) -> ResizeHandle? {
+        let displayStart = CGPoint(
+            x: annotation.startPoint.x / scale.width,
+            y: annotation.startPoint.y / scale.height
+        )
+        let displayEnd = CGPoint(
+            x: annotation.endPoint.x / scale.width,
+            y: annotation.endPoint.y / scale.height
+        )
+
+        let handleSize: CGFloat = 16  // ヒット判定用に大きめ
+
+        // 矢印の場合は startPoint と endPoint の2点のみ
+        if annotation.type == .arrow {
+            let handles: [(ResizeHandle, CGPoint)] = [
+                (.startPoint, displayStart),
+                (.endPoint, displayEnd)
+            ]
+            for (handle, handlePoint) in handles {
+                let handleRect = CGRect(
+                    x: handlePoint.x - handleSize / 2,
+                    y: handlePoint.y - handleSize / 2,
+                    width: handleSize,
+                    height: handleSize
+                )
+                if handleRect.contains(point) {
+                    return handle
+                }
+            }
+        } else {
+            // 四角形/モザイク/テキストの場合は四隅
+            let handles: [(ResizeHandle, CGPoint)] = [
+                (.startPoint, displayStart),
+                (.endPoint, displayEnd),
+                (.startXEndY, CGPoint(x: displayStart.x, y: displayEnd.y)),
+                (.endXStartY, CGPoint(x: displayEnd.x, y: displayStart.y))
+            ]
+            for (handle, handlePoint) in handles {
+                let handleRect = CGRect(
+                    x: handlePoint.x - handleSize / 2,
+                    y: handlePoint.y - handleSize / 2,
+                    width: handleSize,
+                    height: handleSize
+                )
+                if handleRect.contains(point) {
+                    return handle
+                }
+            }
+        }
+        return nil
+    }
+
+    private func getSelectionRect(annotation: Annotation, displayStart: CGPoint, displayEnd: CGPoint) -> CGRect {
+        switch annotation.type {
+        case .arrow:
+            return CGRect(
+                x: min(displayStart.x, displayEnd.x) - 8,
+                y: min(displayStart.y, displayEnd.y) - 8,
+                width: abs(displayEnd.x - displayStart.x) + 16,
+                height: abs(displayEnd.y - displayStart.y) + 16
+            )
+        case .rectangle, .mosaic:
+            return CGRect(
+                x: min(displayStart.x, displayEnd.x) - 4,
+                y: min(displayStart.y, displayEnd.y) - 4,
+                width: abs(displayEnd.x - displayStart.x) + 8,
+                height: abs(displayEnd.y - displayStart.y) + 8
+            )
+        case .text:
+            let fontSize = annotation.fontSize ?? 16.0
+            let textWidth = CGFloat((annotation.text ?? "").count) * fontSize * 0.6
+            return CGRect(
+                x: displayEnd.x - 4,
+                y: displayEnd.y - 4,
+                width: max(textWidth, 20) + 8,
+                height: fontSize * 1.2 + 8
+            )
         }
     }
 
@@ -240,5 +379,75 @@ struct AnnotationCanvas: View {
 
         let path = Path(rect)
         context.stroke(path, with: .color(.gray), style: StrokeStyle(lineWidth: 2, dash: [5, 5]))
+    }
+
+    private func drawSelectionIndicator(for annotation: Annotation, context: inout GraphicsContext, scale: CGSize) {
+        let displayStart = CGPoint(
+            x: annotation.startPoint.x / scale.width,
+            y: annotation.startPoint.y / scale.height
+        )
+        let displayEnd = CGPoint(
+            x: annotation.endPoint.x / scale.width,
+            y: annotation.endPoint.y / scale.height
+        )
+
+        let selectionRect: CGRect
+        switch annotation.type {
+        case .arrow:
+            // 矢印の場合は始点と終点を含む矩形
+            selectionRect = CGRect(
+                x: min(displayStart.x, displayEnd.x) - 8,
+                y: min(displayStart.y, displayEnd.y) - 8,
+                width: abs(displayEnd.x - displayStart.x) + 16,
+                height: abs(displayEnd.y - displayStart.y) + 16
+            )
+        case .rectangle, .mosaic:
+            selectionRect = CGRect(
+                x: min(displayStart.x, displayEnd.x) - 4,
+                y: min(displayStart.y, displayEnd.y) - 4,
+                width: abs(displayEnd.x - displayStart.x) + 8,
+                height: abs(displayEnd.y - displayStart.y) + 8
+            )
+        case .text:
+            let fontSize = annotation.fontSize ?? 16.0
+            let textWidth = CGFloat((annotation.text ?? "").count) * fontSize * 0.6
+            selectionRect = CGRect(
+                x: displayEnd.x - 4,
+                y: displayEnd.y - 4,
+                width: max(textWidth, 20) + 8,
+                height: fontSize * 1.2 + 8
+            )
+        }
+
+        let path = Path(selectionRect)
+        context.stroke(path, with: .color(.blue), style: StrokeStyle(lineWidth: 2, dash: [5, 3]))
+
+        // ハンドルを描画
+        let handleSize: CGFloat = 8
+        let handles: [CGPoint]
+
+        if annotation.type == .arrow {
+            // 矢印の場合は startPoint と endPoint の2点のみ
+            handles = [displayStart, displayEnd]
+        } else {
+            // 四角形/モザイク/テキストの場合は四隅
+            handles = [
+                displayStart,
+                displayEnd,
+                CGPoint(x: displayStart.x, y: displayEnd.y),
+                CGPoint(x: displayEnd.x, y: displayStart.y)
+            ]
+        }
+
+        for handle in handles {
+            let handleRect = CGRect(
+                x: handle.x - handleSize / 2,
+                y: handle.y - handleSize / 2,
+                width: handleSize,
+                height: handleSize
+            )
+            context.fill(Path(handleRect), with: .color(.white))
+            context.stroke(Path(handleRect), with: .color(.blue), lineWidth: 1)
+        }
     }
 }

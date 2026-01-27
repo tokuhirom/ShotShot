@@ -13,10 +13,20 @@ final class EditorViewModel {
     var fontSize: CGFloat = 16.0
     var statusMessage: String = ""
 
+    // Undo/Redo stacks
+    private var undoStack: [[Annotation]] = []
+    private var redoStack: [[Annotation]] = []
+
+    // 選択状態
+    var selectedAnnotationId: UUID? = nil
+
     var selectedColorBinding: Color {
         get { Color(nsColor: selectedColor) }
         set { selectedColor = NSColor(newValue) }
     }
+
+    var canUndo: Bool { !undoStack.isEmpty }
+    var canRedo: Bool { !redoStack.isEmpty }
 
     private var currentAnnotation: Annotation?
 
@@ -24,9 +34,49 @@ final class EditorViewModel {
         self.screenshot = screenshot
     }
 
+    // MARK: - Undo/Redo
+
+    func saveStateForUndo() {
+        undoStack.append(annotations)
+        redoStack.removeAll()
+    }
+
     var compositeImage: NSImage {
-        let image = screenshot.image.copy() as! NSImage
-        return image
+        // モザイク注釈がある場合は、ベース画像にモザイクを適用
+        let mosaicAnnotations = annotations.filter { $0.type == .mosaic }
+        guard !mosaicAnnotations.isEmpty, let cgImage = screenshot.cgImage else {
+            return screenshot.image
+        }
+
+        let width = cgImage.width
+        let height = cgImage.height
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return screenshot.image
+        }
+
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // モザイク注釈のみ適用（スケールファクター考慮）
+        let scaleFactor = screenshot.scaleFactor
+        for annotation in mosaicAnnotations {
+            MosaicTool.draw(annotation, in: context, imageSize: CGSize(width: width, height: height), scaleFactor: scaleFactor)
+        }
+
+        guard let resultImage = context.makeImage() else {
+            return screenshot.image
+        }
+
+        return NSImage(cgImage: resultImage, size: screenshot.image.size)
     }
 
     func startAnnotation(at point: CGPoint) {
@@ -62,6 +112,7 @@ final class EditorViewModel {
         if let text = text {
             annotation.text = text
         }
+        saveStateForUndo()
         annotations.append(annotation)
         currentAnnotation = nil
     }
@@ -71,14 +122,161 @@ final class EditorViewModel {
     }
 
     func clearAnnotations() {
+        guard !annotations.isEmpty else { return }
+        saveStateForUndo()
         annotations.removeAll()
+        selectedAnnotationId = nil
         statusMessage = "注釈をクリアしました"
     }
 
     func undo() {
-        guard !annotations.isEmpty else { return }
-        annotations.removeLast()
+        guard !undoStack.isEmpty else { return }
+        redoStack.append(annotations)
+        annotations = undoStack.removeLast()
+        selectedAnnotationId = nil
         statusMessage = "操作を取り消しました"
+    }
+
+    func redo() {
+        guard !redoStack.isEmpty else { return }
+        undoStack.append(annotations)
+        annotations = redoStack.removeLast()
+        selectedAnnotationId = nil
+        statusMessage = "操作をやり直しました"
+    }
+
+    // MARK: - 選択・移動
+
+    func hitTest(at point: CGPoint) -> Annotation? {
+        // 後から追加された注釈が上にあるので逆順でチェック
+        for annotation in annotations.reversed() {
+            if annotationContainsPoint(annotation, point) {
+                return annotation
+            }
+        }
+        return nil
+    }
+
+    func selectAnnotation(id: UUID) {
+        selectedAnnotationId = id
+    }
+
+    func deselectAnnotation() {
+        selectedAnnotationId = nil
+    }
+
+    func moveSelectedAnnotation(by delta: CGPoint) {
+        guard let selectedId = selectedAnnotationId,
+              let index = annotations.firstIndex(where: { $0.id == selectedId }) else { return }
+
+        var annotation = annotations[index]
+        annotation.startPoint = CGPoint(
+            x: annotation.startPoint.x + delta.x,
+            y: annotation.startPoint.y + delta.y
+        )
+        annotation.endPoint = CGPoint(
+            x: annotation.endPoint.x + delta.x,
+            y: annotation.endPoint.y + delta.y
+        )
+        annotations[index] = annotation
+    }
+
+    func resizeSelectedAnnotation(handle: ResizeHandle, to point: CGPoint) {
+        guard let selectedId = selectedAnnotationId,
+              let index = annotations.firstIndex(where: { $0.id == selectedId }) else { return }
+
+        var annotation = annotations[index]
+
+        switch handle {
+        case .startPoint:
+            // startPoint を動かす
+            annotation.startPoint = point
+        case .endPoint:
+            // endPoint を動かす
+            annotation.endPoint = point
+        case .startXEndY:
+            // startPoint.x と endPoint.y を動かす
+            annotation.startPoint.x = point.x
+            annotation.endPoint.y = point.y
+        case .endXStartY:
+            // endPoint.x と startPoint.y を動かす
+            annotation.endPoint.x = point.x
+            annotation.startPoint.y = point.y
+        }
+
+        annotations[index] = annotation
+    }
+
+    func deleteSelectedAnnotation() {
+        guard let selectedId = selectedAnnotationId,
+              let index = annotations.firstIndex(where: { $0.id == selectedId }) else { return }
+
+        saveStateForUndo()
+        annotations.remove(at: index)
+        selectedAnnotationId = nil
+        statusMessage = "注釈を削除しました"
+    }
+
+    private func annotationContainsPoint(_ annotation: Annotation, _ point: CGPoint) -> Bool {
+        switch annotation.type {
+        case .arrow:
+            return arrowContainsPoint(annotation, point)
+        case .rectangle:
+            return rectangleContainsPoint(annotation, point)
+        case .text:
+            return textContainsPoint(annotation, point)
+        case .mosaic:
+            return rectangleContainsPoint(annotation, point)
+        }
+    }
+
+    private func arrowContainsPoint(_ annotation: Annotation, _ point: CGPoint) -> Bool {
+        // 矢印の線分からの距離で判定
+        let tolerance: CGFloat = 15.0
+
+        let start = annotation.startPoint
+        let end = annotation.endPoint
+
+        let lineLength = hypot(end.x - start.x, end.y - start.y)
+        guard lineLength > 0 else { return false }
+
+        // 点と線分の距離を計算
+        let t = max(0, min(1, ((point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y)) / (lineLength * lineLength)))
+        let nearestX = start.x + t * (end.x - start.x)
+        let nearestY = start.y + t * (end.y - start.y)
+        let distance = hypot(point.x - nearestX, point.y - nearestY)
+
+        return distance <= tolerance
+    }
+
+    private func rectangleContainsPoint(_ annotation: Annotation, _ point: CGPoint) -> Bool {
+        let rect = CGRect(
+            x: min(annotation.startPoint.x, annotation.endPoint.x),
+            y: min(annotation.startPoint.y, annotation.endPoint.y),
+            width: abs(annotation.endPoint.x - annotation.startPoint.x),
+            height: abs(annotation.endPoint.y - annotation.startPoint.y)
+        )
+        // 境界線付近も含める
+        let expandedRect = rect.insetBy(dx: -10, dy: -10)
+        return expandedRect.contains(point)
+    }
+
+    private func textContainsPoint(_ annotation: Annotation, _ point: CGPoint) -> Bool {
+        guard let text = annotation.text else { return false }
+        let fontSize = annotation.fontSize ?? 16.0
+
+        // テキストの大まかなサイズを推定
+        let estimatedWidth = CGFloat(text.count) * fontSize * 0.6
+        let estimatedHeight = fontSize * 1.2
+
+        let rect = CGRect(
+            x: annotation.endPoint.x,
+            y: annotation.endPoint.y,
+            width: estimatedWidth,
+            height: estimatedHeight
+        )
+        let expandedRect = rect.insetBy(dx: -10, dy: -10)
+        return expandedRect.contains(point)
     }
 
     func copyToClipboard() {
@@ -141,7 +339,7 @@ final class EditorViewModel {
         NSGraphicsContext.current = nsContext
 
         for annotation in annotations {
-            drawAnnotation(annotation, in: context, imageSize: CGSize(width: width, height: height))
+            drawAnnotation(annotation, in: context, imageSize: CGSize(width: width, height: height), scaleFactor: screenshot.scaleFactor)
         }
 
         NSGraphicsContext.restoreGraphicsState()
@@ -153,16 +351,16 @@ final class EditorViewModel {
         return NSImage(cgImage: finalCGImage, size: screenshot.image.size)
     }
 
-    private func drawAnnotation(_ annotation: Annotation, in context: CGContext, imageSize: CGSize) {
+    private func drawAnnotation(_ annotation: Annotation, in context: CGContext, imageSize: CGSize, scaleFactor: CGFloat) {
         switch annotation.type {
         case .arrow:
-            ArrowTool.draw(annotation, in: context, imageSize: imageSize)
+            ArrowTool.draw(annotation, in: context, imageSize: imageSize, scaleFactor: scaleFactor)
         case .rectangle:
-            RectangleTool.draw(annotation, in: context, imageSize: imageSize)
+            RectangleTool.draw(annotation, in: context, imageSize: imageSize, scaleFactor: scaleFactor)
         case .text:
-            TextTool.draw(annotation, in: context, imageSize: imageSize)
+            TextTool.draw(annotation, in: context, imageSize: imageSize, scaleFactor: scaleFactor)
         case .mosaic:
-            MosaicTool.draw(annotation, in: context, imageSize: imageSize)
+            MosaicTool.draw(annotation, in: context, imageSize: imageSize, scaleFactor: scaleFactor)
         }
     }
 }

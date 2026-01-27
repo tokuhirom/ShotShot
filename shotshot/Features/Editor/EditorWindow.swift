@@ -11,6 +11,23 @@ struct EditorWindow: View {
             bottomBar
         }
         .frame(minWidth: 600, minHeight: 400)
+        // キーボードショートカット
+        .background(
+            Group {
+                // ⌘Z: Undo
+                Button("") { viewModel.undo() }
+                    .keyboardShortcut("z", modifiers: .command)
+                    .opacity(0)
+                // ⇧⌘Z: Redo
+                Button("") { viewModel.redo() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+                    .opacity(0)
+                // Delete: 選択中の注釈を削除
+                Button("") { viewModel.deleteSelectedAnnotation() }
+                    .keyboardShortcut(.delete, modifiers: [])
+                    .opacity(0)
+            }
+        )
     }
 
     private static let presetColors: [NSColor] = [
@@ -59,6 +76,28 @@ struct EditorWindow: View {
                 .frame(width: 100)
 
             Spacer()
+
+            // Undo/Redo buttons
+            HStack(spacing: 4) {
+                Button(action: { viewModel.undo() }) {
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.title3)
+                }
+                .buttonStyle(.bordered)
+                .disabled(!viewModel.canUndo)
+                .help("取り消し (⌘Z)")
+
+                Button(action: { viewModel.redo() }) {
+                    Image(systemName: "arrow.uturn.forward")
+                        .font(.title3)
+                }
+                .buttonStyle(.bordered)
+                .disabled(!viewModel.canRedo)
+                .help("やり直し (⇧⌘Z)")
+            }
+
+            Divider()
+                .frame(height: 24)
 
             Button("クリア") {
                 viewModel.clearAnnotations()
@@ -184,7 +223,7 @@ enum ToolType: CaseIterable {
         case .arrow: return "arrow.up.right"
         case .rectangle: return "rectangle"
         case .text: return "textformat"
-        case .mosaic: return "square.grid.3x3"
+        case .mosaic: return "checkerboard.rectangle"
         }
     }
 

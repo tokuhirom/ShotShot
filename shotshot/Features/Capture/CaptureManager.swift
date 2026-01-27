@@ -93,6 +93,9 @@ final class CaptureManager {
             }
 
             self.overlayWindows = windows
+
+            // アプリをアクティブにしてマウスイベントを受け取れるようにする
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 

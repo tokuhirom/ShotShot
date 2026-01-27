@@ -26,17 +26,25 @@ struct RectangleTool: AnnotationToolProtocol {
 
         context.saveGState()
 
+        // パスを作成（角丸 or 角張り）
+        let path: CGPath
+        if let cornerRadius = annotation.cornerRadius, cornerRadius > 0 {
+            path = CGPath(roundedRect: rect, cornerWidth: cornerRadius * scale, cornerHeight: cornerRadius * scale, transform: nil)
+        } else {
+            path = CGPath(rect: rect, transform: nil)
+        }
+
         // Draw white outline (border)
         context.setStrokeColor(NSColor.white.cgColor)
         context.setLineWidth(lineWidth + 4 * scale)
         context.setLineJoin(.round)
-        context.addRect(rect)
+        context.addPath(path)
         context.strokePath()
 
         // Draw colored rectangle
         context.setStrokeColor(annotation.color.cgColor)
         context.setLineWidth(lineWidth)
-        context.addRect(rect)
+        context.addPath(path)
         context.strokePath()
 
         context.restoreGState()

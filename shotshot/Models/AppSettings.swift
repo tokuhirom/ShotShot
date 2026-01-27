@@ -23,6 +23,7 @@ final class AppSettings {
         static let selectedColorAlpha = "selectedColorAlpha"
         static let lineWidth = "lineWidth"
         static let fontSize = "fontSize"
+        static let useRoundedCorners = "useRoundedCorners"
     }
 
     // デフォルト値
@@ -68,6 +69,10 @@ final class AppSettings {
         didSet { defaults.set(fontSize, forKey: Keys.fontSize) }
     }
 
+    var useRoundedCorners: Bool = true {
+        didSet { defaults.set(useRoundedCorners, forKey: Keys.useRoundedCorners) }
+    }
+
     private init() {
         let appSupportPath = NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true).first ?? "~/Library/Application Support"
         let defaultSavePath = (appSupportPath as NSString).appendingPathComponent("ShotShot/Screenshots")
@@ -104,5 +109,12 @@ final class AppSettings {
         // フォントサイズの読み込み（デフォルト: 32.0）
         let storedFontSize = defaults.double(forKey: Keys.fontSize)
         self.fontSize = storedFontSize > 0 ? storedFontSize : 32.0
+
+        // 角丸設定の読み込み（デフォルト: true）
+        if defaults.object(forKey: Keys.useRoundedCorners) != nil {
+            self.useRoundedCorners = defaults.bool(forKey: Keys.useRoundedCorners)
+        } else {
+            self.useRoundedCorners = true
+        }
     }
 }

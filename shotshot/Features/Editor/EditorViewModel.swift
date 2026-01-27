@@ -19,6 +19,9 @@ final class EditorViewModel {
     var fontSize: CGFloat {
         didSet { AppSettings.shared.fontSize = fontSize }
     }
+    var useRoundedCorners: Bool {
+        didSet { AppSettings.shared.useRoundedCorners = useRoundedCorners }
+    }
     var statusMessage: String = ""
 
     // Undo/Redo stacks
@@ -46,6 +49,7 @@ final class EditorViewModel {
         self.selectedColor = settings.selectedColor
         self.lineWidth = settings.lineWidth
         self.fontSize = settings.fontSize
+        self.useRoundedCorners = settings.useRoundedCorners
     }
 
     // MARK: - Undo/Redo
@@ -114,7 +118,8 @@ final class EditorViewModel {
             endPoint: point,
             color: selectedColor,
             lineWidth: lineWidth,
-            fontSize: fontSize
+            fontSize: fontSize,
+            cornerRadius: (annotationType == .rectangle && useRoundedCorners) ? 8.0 : nil
         )
     }
 

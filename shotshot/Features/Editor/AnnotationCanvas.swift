@@ -306,7 +306,7 @@ struct AnnotationCanvas: View {
         case .arrow:
             drawArrow(from: displayStart, to: displayEnd, color: annotation.color, lineWidth: annotation.lineWidth, context: &context)
         case .rectangle:
-            drawRectangle(from: displayStart, to: displayEnd, color: annotation.color, lineWidth: annotation.lineWidth, context: &context)
+            drawRectangle(from: displayStart, to: displayEnd, color: annotation.color, lineWidth: annotation.lineWidth, cornerRadius: annotation.cornerRadius, context: &context)
         case .text:
             if let text = annotation.text {
                 drawText(text, at: displayEnd, color: annotation.color, fontSize: annotation.fontSize ?? 16, context: &context)
@@ -408,7 +408,7 @@ struct AnnotationCanvas: View {
         context.draw(mainText, at: point, anchor: .topLeading)
     }
 
-    private func drawRectangle(from start: CGPoint, to end: CGPoint, color: NSColor, lineWidth: CGFloat, context: inout GraphicsContext) {
+    private func drawRectangle(from start: CGPoint, to end: CGPoint, color: NSColor, lineWidth: CGFloat, cornerRadius: CGFloat?, context: inout GraphicsContext) {
         let rect = CGRect(
             x: min(start.x, end.x),
             y: min(start.y, end.y),
@@ -418,7 +418,12 @@ struct AnnotationCanvas: View {
 
         guard rect.width > 2 && rect.height > 2 else { return }
 
-        let path = Path(rect)
+        let path: Path
+        if let radius = cornerRadius, radius > 0 {
+            path = Path(roundedRect: rect, cornerRadius: radius)
+        } else {
+            path = Path(rect)
+        }
 
         // Draw white outline
         context.stroke(path, with: .color(.white), lineWidth: lineWidth + 4)

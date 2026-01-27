@@ -17,6 +17,7 @@ struct Annotation: Identifiable, Sendable {
     var lineWidth: CGFloat
     var text: String?
     var fontSize: CGFloat?
+    var cornerRadius: CGFloat?
 
     init(
         id: UUID = UUID(),
@@ -26,7 +27,8 @@ struct Annotation: Identifiable, Sendable {
         color: NSColor = .red,
         lineWidth: CGFloat = 3.0,
         text: String? = nil,
-        fontSize: CGFloat? = nil
+        fontSize: CGFloat? = nil,
+        cornerRadius: CGFloat? = nil
     ) {
         self.id = id
         self.type = type
@@ -36,5 +38,6 @@ struct Annotation: Identifiable, Sendable {
         self.lineWidth = lineWidth
         self.text = text
         self.fontSize = fontSize
+        self.cornerRadius = cornerRadius
     }
 }

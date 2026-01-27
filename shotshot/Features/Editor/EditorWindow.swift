@@ -62,8 +62,9 @@ struct EditorWindow: View {
             Divider()
                 .frame(height: 24)
 
-            // テキストモード時はフォントサイズ、それ以外は線幅
+            // ツールごとのオプション
             if viewModel.selectedTool == .text {
+                // テキスト: フォントサイズ
                 Menu {
                     ForEach(Self.fontSizes, id: \.self) { size in
                         Button("\(Int(size)) pt") {
@@ -80,7 +81,26 @@ struct EditorWindow: View {
                 }
                 .menuStyle(.borderlessButton)
                 .frame(width: 70)
+            } else if viewModel.selectedTool == .rectangle {
+                // 四角: 角丸/角張り切り替え + 線幅
+                HStack(spacing: 8) {
+                    Button(action: { viewModel.useRoundedCorners.toggle() }) {
+                        Image(systemName: viewModel.useRoundedCorners ? "rectangle.roundedtop" : "rectangle")
+                            .font(.title2)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.bordered)
+                    .help(viewModel.useRoundedCorners ? "角丸" : "角張り")
+
+                    HStack(spacing: 4) {
+                        Text("太さ")
+                            .font(.caption)
+                        Slider(value: $viewModel.lineWidth, in: 1...20)
+                            .frame(width: 80)
+                    }
+                }
             } else {
+                // その他: 線幅のみ
                 HStack(spacing: 4) {
                     Text("太さ")
                         .font(.caption)

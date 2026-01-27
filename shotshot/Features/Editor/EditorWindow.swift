@@ -175,12 +175,14 @@ struct ColorButton: View {
 
 enum ToolType: CaseIterable {
     case arrow
+    case rectangle
     case text
     case mosaic
 
     var iconName: String {
         switch self {
         case .arrow: return "arrow.up.right"
+        case .rectangle: return "rectangle"
         case .text: return "textformat"
         case .mosaic: return "square.grid.3x3"
         }
@@ -189,6 +191,7 @@ enum ToolType: CaseIterable {
     var displayName: String {
         switch self {
         case .arrow: return "矢印"
+        case .rectangle: return "四角"
         case .text: return "テキスト"
         case .mosaic: return "モザイク"
         }

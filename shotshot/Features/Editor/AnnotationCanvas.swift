@@ -122,6 +122,8 @@ struct AnnotationCanvas: View {
         switch annotation.type {
         case .arrow:
             drawArrow(from: displayStart, to: displayEnd, color: annotation.color, lineWidth: annotation.lineWidth, context: &context)
+        case .rectangle:
+            drawRectangle(from: displayStart, to: displayEnd, color: annotation.color, lineWidth: annotation.lineWidth, context: &context)
         case .text:
             if let text = annotation.text {
                 drawText(text, at: displayEnd, color: annotation.color, fontSize: annotation.fontSize ?? 16, context: &context)
@@ -207,6 +209,25 @@ struct AnnotationCanvas: View {
             .foregroundColor(Color(nsColor: color))
 
         context.draw(textView, at: point, anchor: .topLeading)
+    }
+
+    private func drawRectangle(from start: CGPoint, to end: CGPoint, color: NSColor, lineWidth: CGFloat, context: inout GraphicsContext) {
+        let rect = CGRect(
+            x: min(start.x, end.x),
+            y: min(start.y, end.y),
+            width: abs(end.x - start.x),
+            height: abs(end.y - start.y)
+        )
+
+        guard rect.width > 2 && rect.height > 2 else { return }
+
+        let path = Path(rect)
+
+        // Draw white outline
+        context.stroke(path, with: .color(.white), lineWidth: lineWidth + 2)
+
+        // Draw colored rectangle
+        context.stroke(path, with: .color(Color(nsColor: color)), lineWidth: lineWidth)
     }
 
     private func drawMosaicPreview(from start: CGPoint, to end: CGPoint, context: inout GraphicsContext) {

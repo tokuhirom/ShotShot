@@ -18,6 +18,7 @@
 		A1000001212E4B0000000009 /* AnnotationCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000009 /* AnnotationCanvas.swift */; };
 		A1000001212E4B0000000010 /* AnnotationTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000010 /* AnnotationTool.swift */; };
 		A1000001212E4B0000000011 /* ArrowTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000011 /* ArrowTool.swift */; };
+		A1000001212E4B0000000025 /* RectangleTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000025 /* RectangleTool.swift */; };
 		A1000001212E4B0000000012 /* TextTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000012 /* TextTool.swift */; };
 		A1000001212E4B0000000013 /* MosaicTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000013 /* MosaicTool.swift */; };
 		A1000001212E4B0000000014 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000014 /* SettingsView.swift */; };
@@ -43,6 +44,7 @@
 		A1000001212E4A0000000009 /* AnnotationCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationCanvas.swift; sourceTree = "<group>"; };
 		A1000001212E4A0000000010 /* AnnotationTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationTool.swift; sourceTree = "<group>"; };
 		A1000001212E4A0000000011 /* ArrowTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrowTool.swift; sourceTree = "<group>"; };
+		A1000001212E4A0000000025 /* RectangleTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RectangleTool.swift; sourceTree = "<group>"; };
 		A1000001212E4A0000000012 /* TextTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextTool.swift; sourceTree = "<group>"; };
 		A1000001212E4A0000000013 /* MosaicTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosaicTool.swift; sourceTree = "<group>"; };
 		A1000001212E4A0000000014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -144,6 +146,7 @@
 			children = (
 				A1000001212E4A0000000010 /* AnnotationTool.swift */,
 				A1000001212E4A0000000011 /* ArrowTool.swift */,
+				A1000001212E4A0000000025 /* RectangleTool.swift */,
 				A1000001212E4A0000000012 /* TextTool.swift */,
 				A1000001212E4A0000000013 /* MosaicTool.swift */,
 			);
@@ -278,6 +281,7 @@
 				A1000001212E4B0000000009 /* AnnotationCanvas.swift in Sources */,
 				A1000001212E4B0000000010 /* AnnotationTool.swift in Sources */,
 				A1000001212E4B0000000011 /* ArrowTool.swift in Sources */,
+				A1000001212E4B0000000025 /* RectangleTool.swift in Sources */,
 				A1000001212E4B0000000012 /* TextTool.swift in Sources */,
 				A1000001212E4B0000000013 /* MosaicTool.swift in Sources */,
 				A1000001212E4B0000000014 /* SettingsView.swift in Sources */,

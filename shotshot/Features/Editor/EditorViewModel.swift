@@ -34,6 +34,8 @@ final class EditorViewModel {
         switch selectedTool {
         case .arrow:
             annotationType = .arrow
+        case .rectangle:
+            annotationType = .rectangle
         case .text:
             annotationType = .text
         case .mosaic:
@@ -155,6 +157,8 @@ final class EditorViewModel {
         switch annotation.type {
         case .arrow:
             ArrowTool.draw(annotation, in: context, imageSize: imageSize)
+        case .rectangle:
+            RectangleTool.draw(annotation, in: context, imageSize: imageSize)
         case .text:
             TextTool.draw(annotation, in: context, imageSize: imageSize)
         case .mosaic:

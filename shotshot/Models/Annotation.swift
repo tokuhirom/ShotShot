@@ -3,6 +3,7 @@ import Foundation
 
 enum AnnotationType: Sendable {
     case arrow
+    case rectangle
     case text
     case mosaic
 }

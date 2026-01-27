@@ -7,7 +7,7 @@ import SwiftUI
 final class EditorViewModel {
     let screenshot: Screenshot
     var annotations: [Annotation] = []
-    var selectedTool: ToolType = .arrow
+    var selectedTool: ToolType = .select
     var selectedColor: NSColor = NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0) // Skitch Pink
     var lineWidth: CGFloat = 3.0
     var fontSize: CGFloat = 32.0
@@ -82,6 +82,8 @@ final class EditorViewModel {
     func startAnnotation(at point: CGPoint) {
         let annotationType: AnnotationType
         switch selectedTool {
+        case .select:
+            return  // 選択ツールでは新規注釈を作成しない
         case .arrow:
             annotationType = .arrow
         case .rectangle:

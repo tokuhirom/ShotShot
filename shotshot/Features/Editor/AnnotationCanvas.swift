@@ -119,28 +119,33 @@ struct AnnotationCanvas: View {
 
         // ドラッグ開始時
         if viewModel.getCurrentAnnotation() == nil && !isDraggingAnnotation && !isResizingAnnotation {
-            // 選択中の注釈がある場合、まずリサイズハンドルをチェック
-            if let selectedId = viewModel.selectedAnnotationId,
-               let annotation = viewModel.annotations.first(where: { $0.id == selectedId }),
-               let handle = hitTestResizeHandle(annotation: annotation, point: value.startLocation, scale: scale) {
-                // リサイズハンドルをヒット → リサイズモード
-                viewModel.saveStateForUndo()
-                isResizingAnnotation = true
-                activeResizeHandle = handle
-                dragStartPoint = scaledStart
-            } else if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
-                // 既存の注釈をヒット → 選択・移動モード
-                viewModel.saveStateForUndo()
-                viewModel.selectAnnotation(id: hitAnnotation.id)
-                isDraggingAnnotation = true
-                dragStartPoint = scaledStart
-            } else {
-                // ヒットなし → 選択解除
-                viewModel.deselectAnnotation()
-                // テキストツール以外は新規注釈作成開始
-                if viewModel.selectedTool != .text {
-                    viewModel.startAnnotation(at: scaledStart)
+            if viewModel.selectedTool == .select {
+                // 選択ツール: 選択・移動・リサイズ
+                if let selectedId = viewModel.selectedAnnotationId,
+                   let annotation = viewModel.annotations.first(where: { $0.id == selectedId }),
+                   let handle = hitTestResizeHandle(annotation: annotation, point: value.startLocation, scale: scale) {
+                    // リサイズハンドルをヒット → リサイズモード
+                    viewModel.saveStateForUndo()
+                    isResizingAnnotation = true
+                    activeResizeHandle = handle
+                    dragStartPoint = scaledStart
+                } else if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
+                    // 既存の注釈をヒット → 選択・移動モード
+                    viewModel.saveStateForUndo()
+                    viewModel.selectAnnotation(id: hitAnnotation.id)
+                    isDraggingAnnotation = true
+                    dragStartPoint = scaledStart
+                } else {
+                    // ヒットなし → 選択解除
+                    viewModel.deselectAnnotation()
                 }
+            } else if viewModel.selectedTool == .text {
+                // テキストツール: クリック位置でテキスト入力開始（handleDragEndで処理）
+                viewModel.deselectAnnotation()
+            } else {
+                // 描画ツール: 新規注釈作成
+                viewModel.deselectAnnotation()
+                viewModel.startAnnotation(at: scaledStart)
             }
         }
 
@@ -154,7 +159,7 @@ struct AnnotationCanvas: View {
             )
             viewModel.moveSelectedAnnotation(by: delta)
             dragStartPoint = scaledCurrent
-        } else if viewModel.selectedTool != .text {
+        } else if viewModel.selectedTool != .text && viewModel.selectedTool != .select {
             viewModel.updateAnnotation(to: scaledCurrent)
         }
     }

@@ -314,6 +314,7 @@ struct ColorPickerButton: View {
 }
 
 enum ToolType: CaseIterable {
+    case select
     case arrow
     case rectangle
     case text
@@ -321,6 +322,7 @@ enum ToolType: CaseIterable {
 
     var iconName: String {
         switch self {
+        case .select: return "arrow.up.left"
         case .arrow: return "arrow.up.right"
         case .rectangle: return "rectangle"
         case .text: return "textformat"
@@ -330,6 +332,7 @@ enum ToolType: CaseIterable {
 
     var displayName: String {
         switch self {
+        case .select: return "選択"
         case .arrow: return "矢印"
         case .rectangle: return "四角"
         case .text: return "テキスト"

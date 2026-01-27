@@ -18,6 +18,7 @@ final class SelectionOverlayWindow: NSWindow {
     private var windowsUnderCursor: [WindowInfo] = []
     private var highlightedWindowRect: CGRect?
     private let screenFrame: CGRect
+    private var localEventMonitor: Any?
 
     init(screen: NSScreen, onSelection: @escaping (CGRect) -> Void, onCancel: @escaping () -> Void) {
         self.onSelection = onSelection
@@ -45,7 +46,23 @@ final class SelectionOverlayWindow: NSWindow {
         // ウィンドウ一覧を取得
         loadWindowList()
 
+        // Escapeキー用のローカルイベントモニター
+        localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 { // Escape
+                self?.onCancel()
+                return nil
+            }
+            return event
+        }
+
         NSCursor.crosshair.set()
+    }
+
+    func cleanup() {
+        if let monitor = localEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            localEventMonitor = nil
+        }
     }
 
     override var canBecomeKey: Bool { true }
@@ -57,6 +74,9 @@ final class SelectionOverlayWindow: NSWindow {
             return
         }
 
+        // 全画面のサイズを取得（これより大きいウィンドウは除外）
+        let mainScreenFrame = NSScreen.main?.frame ?? screenFrame
+
         windowsUnderCursor = windowList.compactMap { info -> WindowInfo? in
             guard let windowID = info[kCGWindowNumber as String] as? CGWindowID,
                   let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat],
@@ -64,7 +84,7 @@ final class SelectionOverlayWindow: NSWindow {
                   let y = boundsDict["Y"],
                   let width = boundsDict["Width"],
                   let height = boundsDict["Height"],
-                  width > 10, height > 10 else {
+                  width > 50, height > 50 else {
                 return nil
             }
 
@@ -73,9 +93,29 @@ final class SelectionOverlayWindow: NSWindow {
                 return nil
             }
 
+            // ウィンドウレイヤーをチェック（通常のウィンドウは0）
+            let layer = info[kCGWindowLayer as String] as? Int ?? 0
+            if layer < 0 || layer > 100 {
+                return nil
+            }
+
             let frame = CGRect(x: x, y: y, width: width, height: height)
+
+            // 画面全体とほぼ同じサイズのウィンドウは除外（デスクトップ、Dockなど）
+            if width >= mainScreenFrame.width * 0.95 && height >= mainScreenFrame.height * 0.9 {
+                return nil
+            }
+
             let name = info[kCGWindowName as String] as? String
             let ownerName = info[kCGWindowOwnerName as String] as? String
+
+            // Dock, WindowServer, Finder のデスクトップは除外
+            if ownerName == "Dock" || ownerName == "WindowServer" {
+                return nil
+            }
+            if ownerName == "Finder" && (name == nil || name == "") {
+                return nil
+            }
 
             return WindowInfo(id: windowID, frame: frame, name: name, ownerName: ownerName)
         }

@@ -104,6 +104,9 @@ final class CaptureManager {
         let windows = overlayWindows
         overlayWindows = []
         for window in windows {
+            if let overlay = window as? SelectionOverlayWindow {
+                overlay.cleanup()
+            }
             window.orderOut(nil)
         }
     }

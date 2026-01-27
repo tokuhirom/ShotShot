@@ -22,6 +22,12 @@ enum CaptureError: LocalizedError {
     }
 }
 
+struct CaptureSelection: Sendable {
+    let rect: CGRect
+    let displayID: CGDirectDisplayID
+    let scaleFactor: CGFloat
+}
+
 @MainActor
 final class CaptureManager {
     private var overlayWindows: [NSWindow] = []
@@ -37,14 +43,14 @@ final class CaptureManager {
         print("[CaptureManager] Permission granted, showing overlay...")
 
         hasResumed = false
-        let selectedRect = try await showSelectionOverlay()
-        print("[CaptureManager] Selection completed: \(selectedRect)")
+        let selection = try await showSelectionOverlay()
+        print("[CaptureManager] Selection completed: \(selection)")
 
         closeOverlayWindows()
 
         print("[CaptureManager] Capturing rect...")
-        let screenshot = try await captureRect(selectedRect)
-        print("[CaptureManager] Capture done, image size: \(screenshot.image.size)")
+        let screenshot = try await captureRect(selection)
+        print("[CaptureManager] Capture done, image size: \(screenshot.image.size), scale: \(screenshot.scaleFactor)")
 
         return screenshot
     }
@@ -58,8 +64,8 @@ final class CaptureManager {
         }
     }
 
-    private func showSelectionOverlay() async throws -> (rect: CGRect, displayID: CGDirectDisplayID) {
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(rect: CGRect, displayID: CGDirectDisplayID), Error>) in
+    private func showSelectionOverlay() async throws -> CaptureSelection {
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CaptureSelection, Error>) in
             let screens = NSScreen.screens
             var windows: [NSWindow] = []
 
@@ -70,8 +76,10 @@ final class CaptureManager {
                         guard let self = self, !self.hasResumed else { return }
                         self.hasResumed = true
                         let displayID = screen.displayID ?? CGMainDisplayID()
-                        print("[CaptureManager] Resuming with selection...")
-                        continuation.resume(returning: (rect, displayID))
+                        let scaleFactor = screen.backingScaleFactor
+                        print("[CaptureManager] Resuming with selection, scaleFactor: \(scaleFactor)")
+                        let selection = CaptureSelection(rect: rect, displayID: displayID, scaleFactor: scaleFactor)
+                        continuation.resume(returning: selection)
                     },
                     onCancel: { [weak self] in
                         guard let self = self, !self.hasResumed else { return }
@@ -97,8 +105,8 @@ final class CaptureManager {
         }
     }
 
-    nonisolated private func captureRect(_ selection: (rect: CGRect, displayID: CGDirectDisplayID)) async throws -> Screenshot {
-        print("[CaptureManager] captureRect called with displayID: \(selection.displayID)")
+    nonisolated private func captureRect(_ selection: CaptureSelection) async throws -> Screenshot {
+        print("[CaptureManager] captureRect called with displayID: \(selection.displayID), scale: \(selection.scaleFactor)")
         let content = try await SCShareableContent.current
 
         guard let display = content.displays.first(where: { $0.displayID == selection.displayID }) else {
@@ -109,10 +117,11 @@ final class CaptureManager {
 
         let filter = SCContentFilter(display: display, excludingWindows: [])
 
+        let scaleFactor = Int(selection.scaleFactor)
         let config = SCStreamConfiguration()
         config.sourceRect = selection.rect
-        config.width = Int(selection.rect.width) * 2
-        config.height = Int(selection.rect.height) * 2
+        config.width = Int(selection.rect.width) * scaleFactor
+        config.height = Int(selection.rect.height) * scaleFactor
         config.scalesToFit = false
         config.showsCursor = false
         config.captureResolution = .best
@@ -125,7 +134,7 @@ final class CaptureManager {
         print("[CaptureManager] Got CGImage: \(image.width)x\(image.height)")
 
         let nsImage = NSImage(cgImage: image, size: NSSize(width: selection.rect.width, height: selection.rect.height))
-        return Screenshot(image: nsImage, displayID: selection.displayID)
+        return Screenshot(image: nsImage, displayID: selection.displayID, scaleFactor: selection.scaleFactor)
     }
 }
 

@@ -20,7 +20,7 @@ enum ExportError: LocalizedError {
 }
 
 struct ImageExporter {
-    static func save(_ image: NSImage, to directory: String, filename: String? = nil) throws -> URL {
+    static func save(_ screenshot: Screenshot, to directory: String, filename: String? = nil) throws -> URL {
         let fileManager = FileManager.default
         let directoryURL = URL(fileURLWithPath: directory)
 
@@ -32,14 +32,18 @@ struct ImageExporter {
             }
         }
 
-        let actualFilename = filename ?? generateFilename()
-        let fileURL = directoryURL.appendingPathComponent(actualFilename).appendingPathExtension("png")
+        let baseName = filename ?? generateFilename()
+        let scaleSuffix = screenshot.isRetina ? "@2x" : ""
+        let fullFilename = "\(baseName)\(scaleSuffix)"
+        let fileURL = directoryURL.appendingPathComponent(fullFilename).appendingPathExtension("png")
 
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+        guard let cgImage = screenshot.image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw ExportError.failedToCreateImageData
         }
 
         let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
+        bitmapRep.size = screenshot.image.size
+
         guard let pngData = bitmapRep.representation(using: .png, properties: [:]) else {
             throw ExportError.failedToCreateImageData
         }
@@ -53,9 +57,14 @@ struct ImageExporter {
         return fileURL
     }
 
+    static func save(_ image: NSImage, to directory: String, filename: String? = nil) throws -> URL {
+        let screenshot = Screenshot(image: image, scaleFactor: 1.0)
+        return try save(screenshot, to: directory, filename: filename)
+    }
+
     private static func generateFilename() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-        return "shotshot_\(formatter.string(from: Date()))"
+        return "ShotShot_\(formatter.string(from: Date()))"
     }
 }

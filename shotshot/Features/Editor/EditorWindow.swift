@@ -84,16 +84,13 @@ struct EditorWindow: View {
                 viewModel.cancel()
             }
             .buttonStyle(.bordered)
+            .keyboardShortcut(.escape, modifiers: [])
 
-            Button("クリップボードにコピー") {
-                viewModel.copyToClipboard()
-            }
-            .buttonStyle(.bordered)
-
-            Button("保存") {
-                viewModel.save()
+            Button("Done") {
+                viewModel.done()
             }
             .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.return, modifiers: [])
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

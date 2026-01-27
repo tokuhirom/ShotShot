@@ -85,20 +85,28 @@ final class EditorViewModel {
         statusMessage = "クリップボードにコピーしました"
     }
 
-    func save() {
+    func done() {
         let finalImage = renderFinalImage()
         let settings = AppSettings.shared
 
+        // Save to file
         do {
-            let url = try ImageExporter.save(finalImage, to: settings.savePath)
-            statusMessage = "保存しました: \(url.lastPathComponent)"
-
-            if settings.copyToClipboard {
-                ClipboardService.copy(finalImage)
-            }
+            let finalScreenshot = Screenshot(
+                image: finalImage,
+                displayID: screenshot.displayID,
+                scaleFactor: screenshot.scaleFactor
+            )
+            let url = try ImageExporter.save(finalScreenshot, to: settings.savePath)
+            print("[EditorViewModel] Saved to: \(url.path)")
         } catch {
-            statusMessage = "保存に失敗しました: \(error.localizedDescription)"
+            print("[EditorViewModel] Save failed: \(error.localizedDescription)")
         }
+
+        // Copy to clipboard
+        ClipboardService.copy(finalImage)
+
+        // Close window
+        NSApp.keyWindow?.close()
     }
 
     func cancel() {
@@ -140,7 +148,7 @@ final class EditorViewModel {
             return screenshot.image
         }
 
-        return NSImage(cgImage: finalCGImage, size: NSSize(width: width, height: height))
+        return NSImage(cgImage: finalCGImage, size: screenshot.image.size)
     }
 
     private func drawAnnotation(_ annotation: Annotation, in context: CGContext, imageSize: CGSize) {

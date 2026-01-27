@@ -12,18 +12,17 @@ final class SelectionOverlayWindow: NSWindow {
     private var startPoint: CGPoint?
     private var currentRect: CGRect = .zero
     private var isDragging = false
-    private let onSelection: (CGRect) -> Void
-    private let onCancel: () -> Void
+    private var onSelection: ((CGRect) -> Void)?
+    private var onCancel: (() -> Void)?
     private var overlayView: SelectionOverlayView?
     private var windowsUnderCursor: [WindowInfo] = []
     private var highlightedWindowRect: CGRect?
     private let screenFrame: CGRect
     private var localEventMonitor: Any?
     private var globalEventMonitor: Any?
+    private var isCleaned = false
 
     init(screen: NSScreen, onSelection: @escaping (CGRect) -> Void, onCancel: @escaping () -> Void) {
-        self.onSelection = onSelection
-        self.onCancel = onCancel
         self.screenFrame = screen.frame
 
         super.init(
@@ -32,6 +31,9 @@ final class SelectionOverlayWindow: NSWindow {
             backing: .buffered,
             defer: false
         )
+
+        self.onSelection = onSelection
+        self.onCancel = onCancel
 
         self.level = .screenSaver
         self.isOpaque = false
@@ -51,7 +53,7 @@ final class SelectionOverlayWindow: NSWindow {
         // Escapeキー用のローカルイベントモニター
         localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { // Escape
-                self?.onCancel()
+                self?.handleCancel()
                 return nil
             }
             return event
@@ -60,7 +62,7 @@ final class SelectionOverlayWindow: NSWindow {
         // グローバルイベントモニター（アプリがアクティブでないときも検出）
         globalEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { // Escape
-                self?.onCancel()
+                self?.handleCancel()
             }
         }
 
@@ -70,8 +72,9 @@ final class SelectionOverlayWindow: NSWindow {
             object: self,
             queue: .main
         ) { [weak self] _ in
-            guard let self = self, self.isVisible else { return }
-            DispatchQueue.main.async {
+            guard let self = self, !self.isCleaned, self.isVisible else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, !self.isCleaned else { return }
                 self.makeKeyAndOrderFront(nil)
                 NSApp.activate(ignoringOtherApps: true)
             }
@@ -80,7 +83,20 @@ final class SelectionOverlayWindow: NSWindow {
         NSCursor.crosshair.set()
     }
 
+    private func handleCancel() {
+        guard !isCleaned, let cancel = onCancel else { return }
+        cancel()
+    }
+
+    private func handleSelection(_ rect: CGRect) {
+        guard !isCleaned, let selection = onSelection else { return }
+        selection(rect)
+    }
+
     func cleanup() {
+        isCleaned = true
+        onSelection = nil
+        onCancel = nil
         NotificationCenter.default.removeObserver(self)
         if let monitor = localEventMonitor {
             NSEvent.removeMonitor(monitor)
@@ -174,12 +190,12 @@ final class SelectionOverlayWindow: NSWindow {
 
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { // Escape key
-            onCancel()
+            handleCancel()
         }
     }
 
     override func mouseMoved(with event: NSEvent) {
-        guard !isDragging else { return }
+        guard !isDragging, !isCleaned else { return }
 
         let windowPoint = event.locationInWindow
         let screenPoint = convertToScreenCoordinates(windowPoint)
@@ -195,6 +211,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseDown(with event: NSEvent) {
+        guard !isCleaned else { return }
         NSLog("[SelectionOverlay] mouseDown at %@", "\(event.locationInWindow)")
         let point = event.locationInWindow
         startPoint = point
@@ -204,8 +221,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        NSLog("[SelectionOverlay] mouseDragged to %@", "\(event.locationInWindow)")
-
+        guard !isCleaned else { return }
         guard let start = startPoint else { return }
         let current = event.locationInWindow
 
@@ -225,6 +241,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseUp(with event: NSEvent) {
+        guard !isCleaned else { return }
         NSLog("[SelectionOverlay] mouseUp - currentRect: %@, isDragging: %d", "\(currentRect)", isDragging ? 1 : 0)
 
         // ドラッグで選択した場合
@@ -235,9 +252,9 @@ final class SelectionOverlayWindow: NSWindow {
                 width: currentRect.width,
                 height: currentRect.height
             )
-            print("[SelectionOverlay] Drag selection: \(flippedRect)")
+            NSLog("[SelectionOverlay] Drag selection: %@", "\(flippedRect)")
             NSCursor.arrow.set()
-            onSelection(flippedRect)
+            handleSelection(flippedRect)
             return
         }
 
@@ -249,14 +266,14 @@ final class SelectionOverlayWindow: NSWindow {
                 width: windowRect.width,
                 height: windowRect.height
             )
-            print("[SelectionOverlay] Window selection: \(flippedRect)")
+            NSLog("[SelectionOverlay] Window selection: %@", "\(flippedRect)")
             NSCursor.arrow.set()
-            onSelection(flippedRect)
+            handleSelection(flippedRect)
             return
         }
 
         // 何も選択されていない場合はリセット
-        print("[SelectionOverlay] No selection, resetting")
+        NSLog("[SelectionOverlay] No selection, resetting")
         startPoint = nil
         currentRect = .zero
         isDragging = false

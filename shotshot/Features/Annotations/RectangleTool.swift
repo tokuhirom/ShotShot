@@ -28,7 +28,7 @@ struct RectangleTool: AnnotationToolProtocol {
 
         // Draw white outline (border)
         context.setStrokeColor(NSColor.white.cgColor)
-        context.setLineWidth(lineWidth + 2 * scale)
+        context.setLineWidth(lineWidth + 4 * scale)
         context.setLineJoin(.round)
         context.addRect(rect)
         context.strokePath()

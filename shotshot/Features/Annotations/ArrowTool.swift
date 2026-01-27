@@ -80,7 +80,7 @@ struct ArrowTool: AnnotationToolProtocol {
 
         // Draw outline (border)
         context.setStrokeColor(NSColor.white.cgColor)
-        context.setLineWidth(lineWidth * 0.4)
+        context.setLineWidth(lineWidth * 0.8)
         context.setLineJoin(.round)
         context.addPath(arrowPath)
         context.strokePath()

@@ -379,7 +379,7 @@ struct AnnotationCanvas: View {
         arrowPath.closeSubpath()
 
         // Draw outline
-        context.stroke(arrowPath, with: .color(.white), lineWidth: lineWidth * 0.4)
+        context.stroke(arrowPath, with: .color(.white), lineWidth: lineWidth * 0.8)
 
         // Fill arrow
         context.fill(arrowPath, with: .color(Color(nsColor: color)))
@@ -421,7 +421,7 @@ struct AnnotationCanvas: View {
         let path = Path(rect)
 
         // Draw white outline
-        context.stroke(path, with: .color(.white), lineWidth: lineWidth + 2)
+        context.stroke(path, with: .color(.white), lineWidth: lineWidth + 4)
 
         // Draw colored rectangle
         context.stroke(path, with: .color(Color(nsColor: color)), lineWidth: lineWidth)

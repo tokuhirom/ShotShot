@@ -44,6 +44,11 @@ struct AnnotationCanvas: View {
                 if let current = viewModel.getCurrentAnnotation() {
                     drawAnnotation(current, context: &context, scale: scale)
                 }
+
+                // クロップオーバーレイを描画
+                if let cropRect = viewModel.cropRect {
+                    drawCropOverlay(cropRect: cropRect, context: &context, scale: scale, canvasSize: size)
+                }
             }
             .gesture(
                 DragGesture(minimumDistance: 0)
@@ -139,6 +144,11 @@ struct AnnotationCanvas: View {
                     // ヒットなし → 選択解除
                     viewModel.deselectAnnotation()
                 }
+            } else if viewModel.selectedTool == .crop {
+                // クロップツール: 切り抜き領域の選択開始
+                if viewModel.cropRect == nil {
+                    viewModel.startCrop(at: scaledStart)
+                }
             } else if viewModel.selectedTool == .text {
                 // テキストツール: クリック位置でテキスト入力開始（handleDragEndで処理）
                 viewModel.deselectAnnotation()
@@ -159,6 +169,9 @@ struct AnnotationCanvas: View {
             )
             viewModel.moveSelectedAnnotation(by: delta)
             dragStartPoint = scaledCurrent
+        } else if viewModel.selectedTool == .crop {
+            // クロップ領域を更新
+            viewModel.updateCrop(to: scaledCurrent)
         } else if viewModel.selectedTool != .text && viewModel.selectedTool != .select {
             viewModel.updateAnnotation(to: scaledCurrent)
         }
@@ -511,6 +524,67 @@ struct AnnotationCanvas: View {
             )
             context.fill(Path(handleRect), with: .color(.white))
             context.stroke(Path(handleRect), with: .color(.blue), lineWidth: 1)
+        }
+    }
+
+    private func drawCropOverlay(cropRect: CGRect, context: inout GraphicsContext, scale: CGSize, canvasSize: CGSize) {
+        // 画像座標系からキャンバス座標系に変換
+        let displayRect = CGRect(
+            x: cropRect.origin.x / scale.width,
+            y: cropRect.origin.y / scale.height,
+            width: cropRect.width / scale.width,
+            height: cropRect.height / scale.height
+        )
+
+        // 外側を暗くするオーバーレイ
+        let dimColor = Color.black.opacity(0.5)
+
+        // 上部
+        if displayRect.minY > 0 {
+            let topRect = CGRect(x: 0, y: 0, width: canvasSize.width, height: displayRect.minY)
+            context.fill(Path(topRect), with: .color(dimColor))
+        }
+
+        // 下部
+        if displayRect.maxY < canvasSize.height {
+            let bottomRect = CGRect(x: 0, y: displayRect.maxY, width: canvasSize.width, height: canvasSize.height - displayRect.maxY)
+            context.fill(Path(bottomRect), with: .color(dimColor))
+        }
+
+        // 左部
+        if displayRect.minX > 0 {
+            let leftRect = CGRect(x: 0, y: displayRect.minY, width: displayRect.minX, height: displayRect.height)
+            context.fill(Path(leftRect), with: .color(dimColor))
+        }
+
+        // 右部
+        if displayRect.maxX < canvasSize.width {
+            let rightRect = CGRect(x: displayRect.maxX, y: displayRect.minY, width: canvasSize.width - displayRect.maxX, height: displayRect.height)
+            context.fill(Path(rightRect), with: .color(dimColor))
+        }
+
+        // クロップ領域の枠線
+        let borderPath = Path(displayRect)
+        context.stroke(borderPath, with: .color(.white), lineWidth: 2)
+
+        // 四隅のハンドル
+        let handleSize: CGFloat = 10
+        let corners = [
+            CGPoint(x: displayRect.minX, y: displayRect.minY),
+            CGPoint(x: displayRect.maxX, y: displayRect.minY),
+            CGPoint(x: displayRect.minX, y: displayRect.maxY),
+            CGPoint(x: displayRect.maxX, y: displayRect.maxY)
+        ]
+
+        for corner in corners {
+            let handleRect = CGRect(
+                x: corner.x - handleSize / 2,
+                y: corner.y - handleSize / 2,
+                width: handleSize,
+                height: handleSize
+            )
+            context.fill(Path(handleRect), with: .color(.white))
+            context.stroke(Path(handleRect), with: .color(.accentColor), lineWidth: 2)
         }
     }
 }

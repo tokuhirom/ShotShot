@@ -5,7 +5,7 @@ import SwiftUI
 @Observable
 @MainActor
 final class EditorViewModel {
-    let screenshot: Screenshot
+    var screenshot: Screenshot
     var annotations: [Annotation] = []
     var selectedTool: ToolType {
         didSet { AppSettings.shared.selectedToolName = selectedTool.name }
@@ -30,6 +30,9 @@ final class EditorViewModel {
 
     // 選択状態
     var selectedAnnotationId: UUID? = nil
+
+    // クロップ状態（画像座標系で保持）
+    var cropRect: CGRect? = nil
 
     var selectedColorBinding: Color {
         get { Color(nsColor: selectedColor) }
@@ -102,6 +105,8 @@ final class EditorViewModel {
         switch selectedTool {
         case .select:
             return  // 選択ツールでは新規注釈を作成しない
+        case .crop:
+            return  // クロップはAnnotationCanvasで別途処理
         case .arrow:
             annotationType = .arrow
         case .rectangle:
@@ -154,6 +159,92 @@ final class EditorViewModel {
 
     func getCurrentAnnotation() -> Annotation? {
         return currentAnnotation
+    }
+
+    // MARK: - クロップ
+
+    func startCrop(at point: CGPoint) {
+        cropRect = CGRect(origin: point, size: .zero)
+    }
+
+    func updateCrop(to point: CGPoint) {
+        guard let startPoint = cropRect?.origin else { return }
+        cropRect = CGRect(
+            x: min(startPoint.x, point.x),
+            y: min(startPoint.y, point.y),
+            width: abs(point.x - startPoint.x),
+            height: abs(point.y - startPoint.y)
+        )
+    }
+
+    func cancelCrop() {
+        cropRect = nil
+    }
+
+    func applyCrop() {
+        guard let rect = cropRect, rect.width > 10 && rect.height > 10 else {
+            cropRect = nil
+            return
+        }
+
+        guard let cgImage = screenshot.cgImage else {
+            cropRect = nil
+            return
+        }
+
+        let scale = screenshot.scaleFactor
+
+        // 画像座標系に変換（Y軸反転）
+        let imageHeight = CGFloat(cgImage.height)
+        let cropX = rect.origin.x * scale
+        let cropY = imageHeight - (rect.origin.y + rect.height) * scale
+        let cropWidth = rect.width * scale
+        let cropHeight = rect.height * scale
+
+        let cropCGRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
+
+        guard let croppedCGImage = cgImage.cropping(to: cropCGRect) else {
+            cropRect = nil
+            return
+        }
+
+        // 新しいスクリーンショットを作成
+        let newSize = NSSize(width: rect.width, height: rect.height)
+        let newImage = NSImage(cgImage: croppedCGImage, size: newSize)
+
+        screenshot = Screenshot(
+            image: newImage,
+            displayID: screenshot.displayID,
+            scaleFactor: screenshot.scaleFactor
+        )
+
+        // 注釈の座標を調整（クロップ領域の原点を基準に）
+        let offsetX = rect.origin.x
+        let offsetY = rect.origin.y
+        annotations = annotations.compactMap { annotation in
+            var newAnnotation = annotation
+            newAnnotation.startPoint = CGPoint(
+                x: annotation.startPoint.x - offsetX,
+                y: annotation.startPoint.y - offsetY
+            )
+            newAnnotation.endPoint = CGPoint(
+                x: annotation.endPoint.x - offsetX,
+                y: annotation.endPoint.y - offsetY
+            )
+            // クロップ領域外の注釈は除外
+            let bounds = CGRect(origin: .zero, size: newSize)
+            if bounds.contains(newAnnotation.startPoint) || bounds.contains(newAnnotation.endPoint) {
+                return newAnnotation
+            }
+            return nil
+        }
+
+        // Undo履歴をクリア（クロップ後は戻せない）
+        undoStack.removeAll()
+        redoStack.removeAll()
+
+        cropRect = nil
+        statusMessage = "画像を切り抜きました"
     }
 
     func clearAnnotations() {

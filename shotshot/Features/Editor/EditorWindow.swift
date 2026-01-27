@@ -99,6 +99,28 @@ struct EditorWindow: View {
                             .frame(width: 80)
                     }
                 }
+            } else if viewModel.selectedTool == .crop {
+                // クロップ: 適用/キャンセルボタン
+                HStack(spacing: 8) {
+                    if viewModel.cropRect != nil {
+                        Button("適用") {
+                            viewModel.applyCrop()
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button("キャンセル") {
+                            viewModel.cancelCrop()
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Text("ドラッグして切り抜き領域を選択")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } else if viewModel.selectedTool == .select {
+                // 選択ツール: 何も表示しない
+                EmptyView()
             } else {
                 // その他: 線幅のみ
                 HStack(spacing: 4) {
@@ -335,6 +357,7 @@ struct ColorPickerButton: View {
 
 enum ToolType: CaseIterable {
     case select
+    case crop
     case arrow
     case rectangle
     case text
@@ -343,6 +366,7 @@ enum ToolType: CaseIterable {
     var name: String {
         switch self {
         case .select: return "select"
+        case .crop: return "crop"
         case .arrow: return "arrow"
         case .rectangle: return "rectangle"
         case .text: return "text"
@@ -353,6 +377,7 @@ enum ToolType: CaseIterable {
     static func from(name: String) -> ToolType {
         switch name {
         case "select": return .select
+        case "crop": return .crop
         case "arrow": return .arrow
         case "rectangle": return .rectangle
         case "text": return .text
@@ -364,6 +389,7 @@ enum ToolType: CaseIterable {
     var iconName: String {
         switch self {
         case .select: return "arrow.up.left"
+        case .crop: return "crop"
         case .arrow: return "arrow.up.right"
         case .rectangle: return "rectangle"
         case .text: return "textformat"
@@ -374,6 +400,7 @@ enum ToolType: CaseIterable {
     var displayName: String {
         switch self {
         case .select: return "選択"
+        case .crop: return "切り抜き"
         case .arrow: return "矢印"
         case .rectangle: return "四角"
         case .text: return "テキスト"

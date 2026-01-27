@@ -32,8 +32,17 @@ struct CaptureSelection: Sendable {
 final class CaptureManager {
     private var overlayWindows: [NSWindow] = []
     private var hasResumed = false
+    private var isCapturing = false
 
     func captureInteractively() async throws -> Screenshot {
+        // 重複実行を防止
+        guard !isCapturing else {
+            NSLog("[CaptureManager] Already capturing, ignoring request")
+            throw CaptureError.cancelled
+        }
+        isCapturing = true
+        defer { isCapturing = false }
+
         print("[CaptureManager] Checking permission...")
         let hasPermission = await checkPermission()
         guard hasPermission else {
@@ -116,7 +125,7 @@ final class CaptureManager {
     }
 
     private func closeOverlayWindows() {
-        print("[CaptureManager] Closing \(overlayWindows.count) overlay windows...")
+        NSLog("[CaptureManager] Closing %d overlay windows...", overlayWindows.count)
         let windows = overlayWindows
         overlayWindows = []
         for window in windows {
@@ -124,7 +133,9 @@ final class CaptureManager {
                 overlay.cleanup()
             }
             window.orderOut(nil)
+            window.close()
         }
+        NSLog("[CaptureManager] All overlay windows closed")
     }
 
     nonisolated private func captureRect(_ selection: CaptureSelection) async throws -> Screenshot {

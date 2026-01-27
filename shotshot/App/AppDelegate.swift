@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var menuBarManager: MenuBarManager?
     private var hotkeyManager: HotkeyManager?
     private var captureManager: CaptureManager?
@@ -67,6 +67,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showEditor(with screenshot: Screenshot) {
+        // 既存のエディタウィンドウがあれば適切にクリーンアップ
+        if let oldWindow = editorWindow {
+            oldWindow.delegate = nil
+            oldWindow.contentView = nil
+            oldWindow.close()
+            editorWindow = nil
+        }
+
         let viewModel = EditorViewModel(screenshot: screenshot)
         let editorView = EditorWindow(viewModel: viewModel)
 
@@ -79,10 +87,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.title = "ShotShot"
         window.contentView = NSHostingView(rootView: editorView)
         window.center()
+        window.isReleasedWhenClosed = false  // ARC管理のため
+        window.delegate = self  // ウィンドウ閉じた時に参照をクリア
         window.makeKeyAndOrderFront(nil)
 
         editorWindow = window
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    // NSWindowDelegate - ウィンドウが閉じられた時に参照をクリア
+    nonisolated func windowWillClose(_ notification: Notification) {
+        let closingWindow = notification.object as? NSWindow
+        Task { @MainActor in
+            if closingWindow === self.editorWindow {
+                self.editorWindow = nil
+            }
+        }
     }
 
     private func openSettings() {

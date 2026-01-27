@@ -20,6 +20,7 @@ final class SelectionOverlayWindow: NSWindow {
     private let screenFrame: CGRect
     private var localEventMonitor: Any?
     private var globalEventMonitor: Any?
+    private var notificationObserver: Any?
     private var isCleaned = false
 
     init(screen: NSScreen, onSelection: @escaping (CGRect) -> Void, onCancel: @escaping () -> Void) {
@@ -42,6 +43,7 @@ final class SelectionOverlayWindow: NSWindow {
         self.acceptsMouseMovedEvents = true
         self.hasShadow = false
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        self.isReleasedWhenClosed = false  // ARC管理のため手動解放を防ぐ
 
         let view = SelectionOverlayView(frame: screen.frame)
         self.overlayView = view
@@ -67,17 +69,15 @@ final class SelectionOverlayWindow: NSWindow {
         }
 
         // キーウィンドウでなくなったときに再アクティブ化
-        NotificationCenter.default.addObserver(
+        notificationObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification,
             object: self,
             queue: .main
         ) { [weak self] _ in
             guard let self = self, !self.isCleaned, self.isVisible else { return }
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self, !self.isCleaned else { return }
-                self.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
-            }
+            // DispatchQueue.main.asyncは使わず直接実行（クリーンアップ中の問題を防ぐ）
+            self.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
         }
 
         NSCursor.crosshair.set()
@@ -94,10 +94,18 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     func cleanup() {
+        guard !isCleaned else { return }  // 二重クリーンアップを防止
         isCleaned = true
         onSelection = nil
         onCancel = nil
-        NotificationCenter.default.removeObserver(self)
+
+        // NotificationCenterオブザーバーを削除
+        if let observer = notificationObserver {
+            NotificationCenter.default.removeObserver(observer)
+            notificationObserver = nil
+        }
+
+        // イベントモニターを削除
         if let monitor = localEventMonitor {
             NSEvent.removeMonitor(monitor)
             localEventMonitor = nil
@@ -106,6 +114,10 @@ final class SelectionOverlayWindow: NSWindow {
             NSEvent.removeMonitor(monitor)
             globalEventMonitor = nil
         }
+
+        // ビューをクリーンアップ
+        overlayView = nil
+        contentView = nil
     }
 
     override var canBecomeKey: Bool { true }

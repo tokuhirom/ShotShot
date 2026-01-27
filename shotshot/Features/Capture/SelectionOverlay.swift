@@ -195,6 +195,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseDown(with event: NSEvent) {
+        print("[SelectionOverlay] mouseDown at \(event.locationInWindow)")
         let point = event.locationInWindow
         startPoint = point
         currentRect = CGRect(origin: point, size: .zero)
@@ -203,6 +204,8 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        print("[SelectionOverlay] mouseDragged to \(event.locationInWindow)")
+
         guard let start = startPoint else { return }
         let current = event.locationInWindow
 

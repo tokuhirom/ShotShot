@@ -30,5 +30,5 @@ echo "Running: $APP_PATH"
 echo "Log file: $LOG_FILE"
 echo "---"
 
-# teeでコンソールとファイル両方に出力
-"$APP_PATH/Contents/MacOS/ShotShot" 2>&1 | tee "$LOG_FILE"
+# teeでコンソールとファイル両方に出力（バッファリング無効）
+"$APP_PATH/Contents/MacOS/ShotShot" 2>&1 | stdbuf -oL tee "$LOG_FILE"

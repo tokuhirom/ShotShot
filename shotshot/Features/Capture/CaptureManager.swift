@@ -73,34 +73,34 @@ final class CaptureManager {
                 let window = SelectionOverlayWindow(
                     screen: screen,
                     onSelection: { [weak self] rect in
-                        print("[CaptureManager] onSelection called, self=\(self == nil ? "nil" : "exists"), hasResumed=\(self?.hasResumed ?? true)")
+                        NSLog("[CaptureManager] onSelection called, self=%@, hasResumed=%d", self == nil ? "nil" : "exists", (self?.hasResumed ?? true) ? 1 : 0)
                         guard let self = self else {
-                            print("[CaptureManager] ERROR: self is nil!")
+                            NSLog("[CaptureManager] ERROR: self is nil!")
                             return
                         }
                         guard !self.hasResumed else {
-                            print("[CaptureManager] ERROR: already resumed!")
+                            NSLog("[CaptureManager] ERROR: already resumed!")
                             return
                         }
                         self.hasResumed = true
                         let displayID = screen.displayID ?? CGMainDisplayID()
                         let scaleFactor = screen.backingScaleFactor
-                        print("[CaptureManager] Resuming with selection, scaleFactor: \(scaleFactor)")
+                        NSLog("[CaptureManager] Resuming with selection, scaleFactor: %f", scaleFactor)
                         let selection = CaptureSelection(rect: rect, displayID: displayID, scaleFactor: scaleFactor)
                         continuation.resume(returning: selection)
                     },
                     onCancel: { [weak self] in
-                        print("[CaptureManager] onCancel called, self=\(self == nil ? "nil" : "exists"), hasResumed=\(self?.hasResumed ?? true)")
+                        NSLog("[CaptureManager] onCancel called, self=%@, hasResumed=%d", self == nil ? "nil" : "exists", (self?.hasResumed ?? true) ? 1 : 0)
                         guard let self = self else {
-                            print("[CaptureManager] ERROR: self is nil!")
+                            NSLog("[CaptureManager] ERROR: self is nil!")
                             return
                         }
                         guard !self.hasResumed else {
-                            print("[CaptureManager] ERROR: already resumed!")
+                            NSLog("[CaptureManager] ERROR: already resumed!")
                             return
                         }
                         self.hasResumed = true
-                        print("[CaptureManager] Resuming with cancel...")
+                        NSLog("[CaptureManager] Resuming with cancel...")
                         continuation.resume(throwing: CaptureError.cancelled)
                     }
                 )

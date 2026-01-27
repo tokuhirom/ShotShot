@@ -195,7 +195,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseDown(with event: NSEvent) {
-        print("[SelectionOverlay] mouseDown at \(event.locationInWindow)")
+        NSLog("[SelectionOverlay] mouseDown at %@", "\(event.locationInWindow)")
         let point = event.locationInWindow
         startPoint = point
         currentRect = CGRect(origin: point, size: .zero)
@@ -204,7 +204,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        print("[SelectionOverlay] mouseDragged to \(event.locationInWindow)")
+        NSLog("[SelectionOverlay] mouseDragged to %@", "\(event.locationInWindow)")
 
         guard let start = startPoint else { return }
         let current = event.locationInWindow
@@ -225,7 +225,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseUp(with event: NSEvent) {
-        print("[SelectionOverlay] mouseUp - currentRect: \(currentRect), isDragging: \(isDragging)")
+        NSLog("[SelectionOverlay] mouseUp - currentRect: %@, isDragging: %d", "\(currentRect)", isDragging ? 1 : 0)
 
         // ドラッグで選択した場合
         if isDragging && currentRect.width > 5 && currentRect.height > 5 {

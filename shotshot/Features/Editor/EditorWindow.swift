@@ -13,6 +13,15 @@ struct EditorWindow: View {
         .frame(minWidth: 600, minHeight: 400)
     }
 
+    private static let presetColors: [NSColor] = [
+        NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0), // Skitch Pink
+        NSColor(red: 1.0, green: 0.23, blue: 0.19, alpha: 1.0),  // Red
+        NSColor(red: 1.0, green: 0.58, blue: 0.0, alpha: 1.0),   // Orange
+        NSColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0),    // Yellow
+        NSColor(red: 0.3, green: 0.85, blue: 0.39, alpha: 1.0),  // Green
+        NSColor(red: 0.0, green: 0.48, blue: 1.0, alpha: 1.0),   // Blue
+    ]
+
     private var toolbar: some View {
         HStack(spacing: 12) {
             ForEach(ToolType.allCases, id: \.self) { tool in
@@ -26,9 +35,25 @@ struct EditorWindow: View {
             Divider()
                 .frame(height: 24)
 
-            ColorPicker("", selection: $viewModel.selectedColorBinding)
-                .labelsHidden()
-                .frame(width: 30)
+            // Preset color buttons
+            HStack(spacing: 4) {
+                ForEach(0..<Self.presetColors.count, id: \.self) { index in
+                    let color = Self.presetColors[index]
+                    ColorButton(
+                        color: color,
+                        isSelected: viewModel.selectedColor == color,
+                        action: { viewModel.selectedColor = color }
+                    )
+                }
+
+                // Custom color picker
+                ColorPicker("", selection: $viewModel.selectedColorBinding)
+                    .labelsHidden()
+                    .frame(width: 24, height: 24)
+            }
+
+            Divider()
+                .frame(height: 24)
 
             Slider(value: $viewModel.lineWidth, in: 1...20)
                 .frame(width: 100)
@@ -122,6 +147,29 @@ struct ToolButton: View {
         }
         .buttonStyle(.plain)
         .help(tool.displayName)
+    }
+}
+
+struct ColorButton: View {
+    let color: NSColor
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Circle()
+                .fill(Color(nsColor: color))
+                .frame(width: 24, height: 24)
+                .overlay(
+                    Circle()
+                        .strokeBorder(isSelected ? Color.primary : Color.clear, lineWidth: 2)
+                )
+                .overlay(
+                    Circle()
+                        .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 

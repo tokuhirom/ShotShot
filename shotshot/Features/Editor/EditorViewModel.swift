@@ -8,7 +8,7 @@ final class EditorViewModel {
     let screenshot: Screenshot
     var annotations: [Annotation] = []
     var selectedTool: ToolType = .arrow
-    var selectedColor: NSColor = .red
+    var selectedColor: NSColor = NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0) // Skitch Pink
     var lineWidth: CGFloat = 3.0
     var fontSize: CGFloat = 16.0
     var statusMessage: String = ""

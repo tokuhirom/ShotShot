@@ -132,31 +132,72 @@ struct AnnotationCanvas: View {
     }
 
     private func drawArrow(from start: CGPoint, to end: CGPoint, color: NSColor, lineWidth: CGFloat, context: inout GraphicsContext) {
-        var path = Path()
-        path.move(to: start)
-        path.addLine(to: end)
-
-        context.stroke(path, with: .color(Color(nsColor: color)), lineWidth: lineWidth)
-
         let angle = atan2(end.y - start.y, end.x - start.x)
-        let arrowLength: CGFloat = 15
+        let length = hypot(end.x - start.x, end.y - start.y)
 
-        let arrowPoint1 = CGPoint(
-            x: end.x - arrowLength * cos(angle - .pi / 6),
-            y: end.y - arrowLength * sin(angle - .pi / 6)
+        guard length > 5 else { return }
+
+        // Arrow dimensions
+        let baseWidth = lineWidth * 0.5
+        let headWidth = lineWidth * 3
+        let headLength = lineWidth * 6
+
+        // Calculate perpendicular direction
+        let perpAngle = angle + .pi / 2
+
+        // Shaft tapers from baseWidth at start to headWidth at head base
+        let shaftLength = max(0, length - headLength)
+
+        // Points for the tapered shaft
+        let startLeft = CGPoint(
+            x: start.x + baseWidth * cos(perpAngle),
+            y: start.y + baseWidth * sin(perpAngle)
         )
-        let arrowPoint2 = CGPoint(
-            x: end.x - arrowLength * cos(angle + .pi / 6),
-            y: end.y - arrowLength * sin(angle + .pi / 6)
+        let startRight = CGPoint(
+            x: start.x - baseWidth * cos(perpAngle),
+            y: start.y - baseWidth * sin(perpAngle)
         )
 
+        // Point where shaft meets head
+        let shaftEnd = CGPoint(
+            x: start.x + shaftLength * cos(angle),
+            y: start.y + shaftLength * sin(angle)
+        )
+        let shaftEndLeft = CGPoint(
+            x: shaftEnd.x + headWidth * 0.5 * cos(perpAngle),
+            y: shaftEnd.y + headWidth * 0.5 * sin(perpAngle)
+        )
+        let shaftEndRight = CGPoint(
+            x: shaftEnd.x - headWidth * 0.5 * cos(perpAngle),
+            y: shaftEnd.y - headWidth * 0.5 * sin(perpAngle)
+        )
+
+        // Arrow head points
+        let headLeft = CGPoint(
+            x: shaftEnd.x + headWidth * cos(perpAngle),
+            y: shaftEnd.y + headWidth * sin(perpAngle)
+        )
+        let headRight = CGPoint(
+            x: shaftEnd.x - headWidth * cos(perpAngle),
+            y: shaftEnd.y - headWidth * sin(perpAngle)
+        )
+
+        // Build arrow path
         var arrowPath = Path()
-        arrowPath.move(to: end)
-        arrowPath.addLine(to: arrowPoint1)
-        arrowPath.move(to: end)
-        arrowPath.addLine(to: arrowPoint2)
+        arrowPath.move(to: startLeft)
+        arrowPath.addLine(to: shaftEndLeft)
+        arrowPath.addLine(to: headLeft)
+        arrowPath.addLine(to: end)
+        arrowPath.addLine(to: headRight)
+        arrowPath.addLine(to: shaftEndRight)
+        arrowPath.addLine(to: startRight)
+        arrowPath.closeSubpath()
 
-        context.stroke(arrowPath, with: .color(Color(nsColor: color)), lineWidth: lineWidth)
+        // Draw outline
+        context.stroke(arrowPath, with: .color(.white), lineWidth: lineWidth * 0.4)
+
+        // Fill arrow
+        context.fill(arrowPath, with: .color(Color(nsColor: color)))
     }
 
     private func drawText(_ text: String, at point: CGPoint, color: NSColor, fontSize: CGFloat, context: inout GraphicsContext) {

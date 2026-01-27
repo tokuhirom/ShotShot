@@ -13,34 +13,79 @@ struct ArrowTool: AnnotationToolProtocol {
             y: imageSize.height - annotation.endPoint.y
         )
 
+        let angle = atan2(end.y - start.y, end.x - start.x)
+        let length = hypot(end.x - start.x, end.y - start.y)
+
+        guard length > 5 else { return }
+
+        // Arrow dimensions
+        let baseWidth = annotation.lineWidth * 0.5
+        let headWidth = annotation.lineWidth * 3
+        let headLength = annotation.lineWidth * 6
+
+        // Calculate perpendicular direction
+        let perpAngle = angle + .pi / 2
+
+        // Shaft tapers from baseWidth at start to headWidth at head base
+        let shaftLength = max(0, length - headLength)
+
+        // Points for the tapered shaft
+        let startLeft = CGPoint(
+            x: start.x + baseWidth * cos(perpAngle),
+            y: start.y + baseWidth * sin(perpAngle)
+        )
+        let startRight = CGPoint(
+            x: start.x - baseWidth * cos(perpAngle),
+            y: start.y - baseWidth * sin(perpAngle)
+        )
+
+        // Point where shaft meets head
+        let shaftEnd = CGPoint(
+            x: start.x + shaftLength * cos(angle),
+            y: start.y + shaftLength * sin(angle)
+        )
+        let shaftEndLeft = CGPoint(
+            x: shaftEnd.x + headWidth * 0.5 * cos(perpAngle),
+            y: shaftEnd.y + headWidth * 0.5 * sin(perpAngle)
+        )
+        let shaftEndRight = CGPoint(
+            x: shaftEnd.x - headWidth * 0.5 * cos(perpAngle),
+            y: shaftEnd.y - headWidth * 0.5 * sin(perpAngle)
+        )
+
+        // Arrow head points
+        let headLeft = CGPoint(
+            x: shaftEnd.x + headWidth * cos(perpAngle),
+            y: shaftEnd.y + headWidth * sin(perpAngle)
+        )
+        let headRight = CGPoint(
+            x: shaftEnd.x - headWidth * cos(perpAngle),
+            y: shaftEnd.y - headWidth * sin(perpAngle)
+        )
+
         context.saveGState()
 
-        context.setStrokeColor(annotation.color.cgColor)
-        context.setLineWidth(annotation.lineWidth)
-        context.setLineCap(.round)
-        context.setLineJoin(.round)
+        // Build arrow path
+        let arrowPath = CGMutablePath()
+        arrowPath.move(to: startLeft)
+        arrowPath.addLine(to: shaftEndLeft)
+        arrowPath.addLine(to: headLeft)
+        arrowPath.addLine(to: end)
+        arrowPath.addLine(to: headRight)
+        arrowPath.addLine(to: shaftEndRight)
+        arrowPath.addLine(to: startRight)
+        arrowPath.closeSubpath()
 
-        context.move(to: start)
-        context.addLine(to: end)
+        // Draw outline (border)
+        context.setStrokeColor(NSColor.white.cgColor)
+        context.setLineWidth(annotation.lineWidth * 0.4)
+        context.setLineJoin(.round)
+        context.addPath(arrowPath)
         context.strokePath()
 
-        let angle = atan2(end.y - start.y, end.x - start.x)
-        let arrowLength: CGFloat = annotation.lineWidth * 5
-
-        let arrowPoint1 = CGPoint(
-            x: end.x - arrowLength * cos(angle - .pi / 6),
-            y: end.y - arrowLength * sin(angle - .pi / 6)
-        )
-        let arrowPoint2 = CGPoint(
-            x: end.x - arrowLength * cos(angle + .pi / 6),
-            y: end.y - arrowLength * sin(angle + .pi / 6)
-        )
-
+        // Fill arrow
         context.setFillColor(annotation.color.cgColor)
-        context.move(to: end)
-        context.addLine(to: arrowPoint1)
-        context.addLine(to: arrowPoint2)
-        context.closePath()
+        context.addPath(arrowPath)
         context.fillPath()
 
         context.restoreGState()

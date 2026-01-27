@@ -86,6 +86,12 @@ struct AnnotationCanvas: View {
                             .font(.system(size: viewModel.fontSize, weight: .bold))
                             .foregroundColor(Color(nsColor: viewModel.selectedColor))
                             .focused($isTextFieldFocused)
+                            .onChange(of: isTextFieldFocused) { _, focused in
+                                // フォーカスが外れたらテキストを確定
+                                if !focused && isEditing {
+                                    finishTextEditing()
+                                }
+                            }
                         }
                         .fixedSize()
                         Spacer()

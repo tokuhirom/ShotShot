@@ -1,16 +1,28 @@
 import AppKit
 import SwiftUI
 
+struct WindowInfo {
+    let id: CGWindowID
+    let frame: CGRect
+    let name: String?
+    let ownerName: String?
+}
+
 final class SelectionOverlayWindow: NSWindow {
     private var startPoint: CGPoint?
     private var currentRect: CGRect = .zero
+    private var isDragging = false
     private let onSelection: (CGRect) -> Void
     private let onCancel: () -> Void
     private var overlayView: SelectionOverlayView?
+    private var windowsUnderCursor: [WindowInfo] = []
+    private var highlightedWindowRect: CGRect?
+    private let screenFrame: CGRect
 
     init(screen: NSScreen, onSelection: @escaping (CGRect) -> Void, onCancel: @escaping () -> Void) {
         self.onSelection = onSelection
         self.onCancel = onCancel
+        self.screenFrame = screen.frame
 
         super.init(
             contentRect: screen.frame,
@@ -30,11 +42,68 @@ final class SelectionOverlayWindow: NSWindow {
         self.overlayView = view
         self.contentView = view
 
+        // ウィンドウ一覧を取得
+        loadWindowList()
+
         NSCursor.crosshair.set()
     }
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    private func loadWindowList() {
+        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+        guard let windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
+            return
+        }
+
+        windowsUnderCursor = windowList.compactMap { info -> WindowInfo? in
+            guard let windowID = info[kCGWindowNumber as String] as? CGWindowID,
+                  let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat],
+                  let x = boundsDict["X"],
+                  let y = boundsDict["Y"],
+                  let width = boundsDict["Width"],
+                  let height = boundsDict["Height"],
+                  width > 10, height > 10 else {
+                return nil
+            }
+
+            // オーバーレイウィンドウ自身は除外
+            if windowID == CGWindowID(windowNumber) {
+                return nil
+            }
+
+            let frame = CGRect(x: x, y: y, width: width, height: height)
+            let name = info[kCGWindowName as String] as? String
+            let ownerName = info[kCGWindowOwnerName as String] as? String
+
+            return WindowInfo(id: windowID, frame: frame, name: name, ownerName: ownerName)
+        }
+    }
+
+    private func findWindowAt(screenPoint: CGPoint) -> WindowInfo? {
+        // スクリーン座標系でウィンドウを検索（上が0）
+        for window in windowsUnderCursor {
+            if window.frame.contains(screenPoint) {
+                return window
+            }
+        }
+        return nil
+    }
+
+    private func convertToScreenCoordinates(_ windowPoint: CGPoint) -> CGPoint {
+        // ウィンドウ座標（左下原点）をスクリーン座標（左上原点）に変換
+        let screenY = screenFrame.height - windowPoint.y + screenFrame.origin.y
+        let screenX = windowPoint.x + screenFrame.origin.x
+        return CGPoint(x: screenX, y: screenY)
+    }
+
+    private func convertWindowFrameToLocal(_ windowFrame: CGRect) -> CGRect {
+        // CGWindowの座標系（スクリーン左上原点）をNSView座標系（左下原点）に変換
+        let localX = windowFrame.origin.x - screenFrame.origin.x
+        let localY = screenFrame.height - (windowFrame.origin.y - screenFrame.origin.y) - windowFrame.height
+        return CGRect(x: localX, y: localY, width: windowFrame.width, height: windowFrame.height)
+    }
 
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { // Escape key
@@ -42,10 +111,27 @@ final class SelectionOverlayWindow: NSWindow {
         }
     }
 
+    override func mouseMoved(with event: NSEvent) {
+        guard !isDragging else { return }
+
+        let windowPoint = event.locationInWindow
+        let screenPoint = convertToScreenCoordinates(windowPoint)
+
+        if let window = findWindowAt(screenPoint: screenPoint) {
+            let localRect = convertWindowFrameToLocal(window.frame)
+            highlightedWindowRect = localRect
+            overlayView?.highlightRect = localRect
+        } else {
+            highlightedWindowRect = nil
+            overlayView?.highlightRect = nil
+        }
+    }
+
     override func mouseDown(with event: NSEvent) {
         let point = event.locationInWindow
         startPoint = point
         currentRect = CGRect(origin: point, size: .zero)
+        isDragging = false
         overlayView?.selectionRect = currentRect
     }
 
@@ -58,36 +144,64 @@ final class SelectionOverlayWindow: NSWindow {
         let width = abs(current.x - start.x)
         let height = abs(current.y - start.y)
 
+        // ドラッグ開始とみなす閾値
+        if width > 5 || height > 5 {
+            isDragging = true
+            overlayView?.highlightRect = nil
+        }
+
         currentRect = CGRect(x: x, y: y, width: width, height: height)
         overlayView?.selectionRect = currentRect
     }
 
     override func mouseUp(with event: NSEvent) {
-        print("[SelectionOverlay] mouseUp - currentRect: \(currentRect)")
-        guard currentRect.width > 5 && currentRect.height > 5 else {
-            print("[SelectionOverlay] Selection too small, resetting")
-            startPoint = nil
-            currentRect = .zero
-            overlayView?.selectionRect = .zero
+        print("[SelectionOverlay] mouseUp - currentRect: \(currentRect), isDragging: \(isDragging)")
+
+        // ドラッグで選択した場合
+        if isDragging && currentRect.width > 5 && currentRect.height > 5 {
+            let flippedRect = CGRect(
+                x: currentRect.origin.x,
+                y: screenFrame.height - currentRect.origin.y - currentRect.height,
+                width: currentRect.width,
+                height: currentRect.height
+            )
+            print("[SelectionOverlay] Drag selection: \(flippedRect)")
+            NSCursor.arrow.set()
+            onSelection(flippedRect)
             return
         }
 
-        let screenFrame = frame
-        let flippedRect = CGRect(
-            x: currentRect.origin.x,
-            y: screenFrame.height - currentRect.origin.y - currentRect.height,
-            width: currentRect.width,
-            height: currentRect.height
-        )
+        // クリックでウィンドウを選択した場合
+        if let windowRect = highlightedWindowRect {
+            let flippedRect = CGRect(
+                x: windowRect.origin.x,
+                y: screenFrame.height - windowRect.origin.y - windowRect.height,
+                width: windowRect.width,
+                height: windowRect.height
+            )
+            print("[SelectionOverlay] Window selection: \(flippedRect)")
+            NSCursor.arrow.set()
+            onSelection(flippedRect)
+            return
+        }
 
-        print("[SelectionOverlay] Calling onSelection with rect: \(flippedRect)")
-        NSCursor.arrow.set()
-        onSelection(flippedRect)
+        // 何も選択されていない場合はリセット
+        print("[SelectionOverlay] No selection, resetting")
+        startPoint = nil
+        currentRect = .zero
+        isDragging = false
+        overlayView?.selectionRect = .zero
     }
 }
 
 final class SelectionOverlayView: NSView {
     var selectionRect: CGRect = .zero {
+        didSet {
+            needsDisplay = true
+        }
+    }
+
+    var highlightRect: CGRect? {
         didSet {
             needsDisplay = true
         }
@@ -101,6 +215,21 @@ final class SelectionOverlayView: NSView {
         NSColor.black.withAlphaComponent(0.3).setFill()
         bounds.fill()
 
+        // ウィンドウハイライト表示
+        if let highlight = highlightRect, selectionRect.width <= 5 && selectionRect.height <= 5 {
+            NSGraphicsContext.current?.compositingOperation = .clear
+            NSColor.clear.setFill()
+            highlight.fill()
+
+            NSGraphicsContext.current?.compositingOperation = .sourceOver
+
+            NSColor.systemBlue.setStroke()
+            let borderPath = NSBezierPath(rect: highlight)
+            borderPath.lineWidth = 3.0
+            borderPath.stroke()
+        }
+
+        // ドラッグ選択表示
         if selectionRect.width > 0 && selectionRect.height > 0 {
             NSGraphicsContext.current?.compositingOperation = .clear
             NSColor.clear.setFill()

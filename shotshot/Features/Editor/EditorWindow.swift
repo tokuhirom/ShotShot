@@ -50,23 +50,21 @@ struct EditorWindow: View {
             ZStack {
                 Color(nsColor: .controlBackgroundColor)
 
-                if let image = viewModel.screenshot.image.representations.first {
-                    let imageSize = NSSize(width: image.pixelsWide, height: image.pixelsHigh)
-                    let scaledSize = scaledImageSize(imageSize: imageSize, containerSize: geometry.size)
+                let imageSize = viewModel.screenshot.image.size
+                let scaledSize = scaledImageSize(imageSize: imageSize, containerSize: geometry.size)
 
-                    ZStack {
-                        Image(nsImage: viewModel.compositeImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: scaledSize.width, height: scaledSize.height)
-
-                        AnnotationCanvas(
-                            viewModel: viewModel,
-                            canvasSize: scaledSize,
-                            imageSize: imageSize
-                        )
+                ZStack {
+                    Image(nsImage: viewModel.compositeImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
                         .frame(width: scaledSize.width, height: scaledSize.height)
-                    }
+
+                    AnnotationCanvas(
+                        viewModel: viewModel,
+                        canvasSize: scaledSize,
+                        imageSize: imageSize
+                    )
+                    .frame(width: scaledSize.width, height: scaledSize.height)
                 }
             }
         }

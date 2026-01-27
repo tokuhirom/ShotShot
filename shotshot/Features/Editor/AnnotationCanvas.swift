@@ -138,7 +138,7 @@ struct AnnotationCanvas: View {
         guard length > 5 else { return }
 
         // Arrow dimensions
-        let baseWidth = lineWidth * 0.5
+        let baseWidth = lineWidth * 0.15
         let headWidth = lineWidth * 3
         let headLength = lineWidth * 6
 

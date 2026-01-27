@@ -19,7 +19,7 @@ struct ArrowTool: AnnotationToolProtocol {
         guard length > 5 else { return }
 
         // Arrow dimensions
-        let baseWidth = annotation.lineWidth * 0.5
+        let baseWidth = annotation.lineWidth * 0.15
         let headWidth = annotation.lineWidth * 3
         let headLength = annotation.lineWidth * 6
 

@@ -76,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "shotshot - Editor"
+        window.title = "ShotShot"
         window.contentView = NSHostingView(rootView: editorView)
         window.center()
         window.makeKeyAndOrderFront(nil)
@@ -93,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showPermissionAlert() {
         let alert = NSAlert()
         alert.messageText = "画面収録の許可が必要です"
-        alert.informativeText = "システム設定 > プライバシーとセキュリティ > 画面収録 から shotshot を許可してください。"
+        alert.informativeText = "システム設定 > プライバシーとセキュリティ > 画面収録 から ShotShot を許可してください。"
         alert.alertStyle = .warning
         alert.addButton(withTitle: "システム設定を開く")
         alert.addButton(withTitle: "キャンセル")

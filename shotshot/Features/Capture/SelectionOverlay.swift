@@ -19,6 +19,8 @@ final class SelectionOverlayWindow: NSWindow {
     private var highlightedWindowRect: CGRect?
     private let screenFrame: CGRect
     private var localEventMonitor: Any?
+    private var globalEventMonitor: Any?
+    private var keepAliveTimer: Timer?
 
     init(screen: NSScreen, onSelection: @escaping (CGRect) -> Void, onCancel: @escaping () -> Void) {
         self.onSelection = onSelection
@@ -38,6 +40,7 @@ final class SelectionOverlayWindow: NSWindow {
         self.ignoresMouseEvents = false
         self.acceptsMouseMovedEvents = true
         self.hasShadow = false
+        self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         let view = SelectionOverlayView(frame: screen.frame)
         self.overlayView = view
@@ -55,6 +58,22 @@ final class SelectionOverlayWindow: NSWindow {
             return event
         }
 
+        // グローバルイベントモニター（アプリがアクティブでないときも検出）
+        globalEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 { // Escape
+                self?.onCancel()
+            }
+        }
+
+        // ウィンドウをアクティブに保つタイマー
+        keepAliveTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            if !self.isKeyWindow {
+                self.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
+
         NSCursor.crosshair.set()
     }
 
@@ -63,6 +82,12 @@ final class SelectionOverlayWindow: NSWindow {
             NSEvent.removeMonitor(monitor)
             localEventMonitor = nil
         }
+        if let monitor = globalEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalEventMonitor = nil
+        }
+        keepAliveTimer?.invalidate()
+        keepAliveTimer = nil
     }
 
     override var canBecomeKey: Bool { true }

@@ -73,7 +73,15 @@ final class CaptureManager {
                 let window = SelectionOverlayWindow(
                     screen: screen,
                     onSelection: { [weak self] rect in
-                        guard let self = self, !self.hasResumed else { return }
+                        print("[CaptureManager] onSelection called, self=\(self == nil ? "nil" : "exists"), hasResumed=\(self?.hasResumed ?? true)")
+                        guard let self = self else {
+                            print("[CaptureManager] ERROR: self is nil!")
+                            return
+                        }
+                        guard !self.hasResumed else {
+                            print("[CaptureManager] ERROR: already resumed!")
+                            return
+                        }
                         self.hasResumed = true
                         let displayID = screen.displayID ?? CGMainDisplayID()
                         let scaleFactor = screen.backingScaleFactor
@@ -82,7 +90,15 @@ final class CaptureManager {
                         continuation.resume(returning: selection)
                     },
                     onCancel: { [weak self] in
-                        guard let self = self, !self.hasResumed else { return }
+                        print("[CaptureManager] onCancel called, self=\(self == nil ? "nil" : "exists"), hasResumed=\(self?.hasResumed ?? true)")
+                        guard let self = self else {
+                            print("[CaptureManager] ERROR: self is nil!")
+                            return
+                        }
+                        guard !self.hasResumed else {
+                            print("[CaptureManager] ERROR: already resumed!")
+                            return
+                        }
                         self.hasResumed = true
                         print("[CaptureManager] Resuming with cancel...")
                         continuation.resume(throwing: CaptureError.cancelled)

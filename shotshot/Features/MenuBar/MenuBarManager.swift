@@ -19,7 +19,7 @@ final class MenuBarManager {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "shotshot")
+            button.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ShotShot")
             button.image?.isTemplate = true
         }
 
@@ -33,13 +33,19 @@ final class MenuBarManager {
 
         menu.addItem(NSMenuItem.separator())
 
+        let openFolderItem = NSMenuItem(title: "保存先を開く", action: #selector(openSaveFolderAction), keyEquivalent: "")
+        openFolderItem.target = self
+        menu.addItem(openFolderItem)
+
+        menu.addItem(NSMenuItem.separator())
+
         let settingsItem = NSMenuItem(title: "設定...", action: #selector(settingsAction), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
         menu.addItem(NSMenuItem.separator())
 
-        let quitItem = NSMenuItem(title: "shotshot を終了", action: #selector(quitAction), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "ShotShot を終了", action: #selector(quitAction), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -48,6 +54,19 @@ final class MenuBarManager {
 
     @objc private func captureAction() {
         onCapture()
+    }
+
+    @objc private func openSaveFolderAction() {
+        let savePath = AppSettings.shared.savePath
+        let url = URL(fileURLWithPath: savePath)
+
+        // Create directory if it doesn't exist
+        let fileManager = FileManager.default
+        if !fileManager.fileExists(atPath: savePath) {
+            try? fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+
+        NSWorkspace.shared.open(url)
     }
 
     @objc private func settingsAction() {

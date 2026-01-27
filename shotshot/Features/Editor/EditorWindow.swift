@@ -3,6 +3,7 @@ import SwiftUI
 
 struct EditorWindow: View {
     @Bindable var viewModel: EditorViewModel
+    @State private var displayScale: CGFloat = 1.0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -172,6 +173,7 @@ struct EditorWindow: View {
 
                 let imageSize = viewModel.screenshot.image.size
                 let scaledSize = scaledImageSize(imageSize: imageSize, containerSize: geometry.size)
+                let scale = scaledSize.width / imageSize.width
 
                 ZStack {
                     Image(nsImage: viewModel.compositeImage)
@@ -186,12 +188,26 @@ struct EditorWindow: View {
                     )
                     .frame(width: scaledSize.width, height: scaledSize.height)
                 }
+                .onAppear {
+                    displayScale = scale
+                }
+                .onChange(of: geometry.size) { _, _ in
+                    let newScaledSize = scaledImageSize(imageSize: imageSize, containerSize: geometry.size)
+                    displayScale = newScaledSize.width / imageSize.width
+                }
             }
         }
     }
 
     private var bottomBar: some View {
         HStack {
+            // 倍率表示
+            Text("\(Int(displayScale * 100))%")
+                .foregroundColor(.secondary)
+                .font(.caption)
+                .monospacedDigit()
+                .frame(width: 40, alignment: .leading)
+
             Text(viewModel.statusMessage)
                 .foregroundColor(.secondary)
                 .font(.caption)

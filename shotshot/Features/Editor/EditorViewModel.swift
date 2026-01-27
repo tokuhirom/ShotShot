@@ -161,6 +161,21 @@ final class EditorViewModel {
         return currentAnnotation
     }
 
+    func updateTextAnnotation(id: UUID, text: String) {
+        guard let index = annotations.firstIndex(where: { $0.id == id }) else { return }
+        saveStateForUndo()
+        annotations[index].text = text
+    }
+
+    func deleteAnnotation(id: UUID) {
+        guard let index = annotations.firstIndex(where: { $0.id == id }) else { return }
+        saveStateForUndo()
+        annotations.remove(at: index)
+        if selectedAnnotationId == id {
+            selectedAnnotationId = nil
+        }
+    }
+
     // MARK: - クロップ
 
     func startCrop(at point: CGPoint) {

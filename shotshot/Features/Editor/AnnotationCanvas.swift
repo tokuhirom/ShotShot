@@ -15,10 +15,13 @@ struct AnnotationCanvas: View {
     @State private var isEditing = false
     @State private var editingText = ""
     @State private var editingPosition: CGPoint = .zero
+    @State private var editingAnnotationId: UUID? = nil  // 編集中のテキスト注釈ID（nilなら新規作成）
     @State private var isDraggingAnnotation = false
     @State private var isResizingAnnotation = false
     @State private var activeResizeHandle: ResizeHandle? = nil
     @State private var dragStartPoint: CGPoint = .zero
+    @State private var lastClickTime: Date = .distantPast
+    @State private var lastClickPoint: CGPoint = .zero
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -131,6 +134,15 @@ struct AnnotationCanvas: View {
         // ドラッグ開始時
         if viewModel.getCurrentAnnotation() == nil && !isDraggingAnnotation && !isResizingAnnotation {
             if viewModel.selectedTool == .select {
+                // ダブルクリック検出
+                let now = Date()
+                let clickInterval = now.timeIntervalSince(lastClickTime)
+                let clickDistance = hypot(value.startLocation.x - lastClickPoint.x, value.startLocation.y - lastClickPoint.y)
+                let isDoubleClick = clickInterval < 0.3 && clickDistance < 10
+
+                lastClickTime = now
+                lastClickPoint = value.startLocation
+
                 // 選択ツール: 選択・移動・リサイズ
                 if let selectedId = viewModel.selectedAnnotationId,
                    let annotation = viewModel.annotations.first(where: { $0.id == selectedId }),
@@ -141,6 +153,11 @@ struct AnnotationCanvas: View {
                     activeResizeHandle = handle
                     dragStartPoint = scaledStart
                 } else if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
+                    // テキスト注釈をダブルクリック → 編集モード
+                    if isDoubleClick && hitAnnotation.type == .text {
+                        startEditingTextAnnotation(hitAnnotation)
+                        return
+                    }
                     // 既存の注釈をヒット → 選択・移動モード
                     viewModel.saveStateForUndo()
                     viewModel.selectAnnotation(id: hitAnnotation.id)
@@ -290,9 +307,17 @@ struct AnnotationCanvas: View {
     }
 
     private func finishTextEditing() {
-        guard !editingText.isEmpty else {
+        defer {
             isEditing = false
             editingText = ""
+            editingAnnotationId = nil
+        }
+
+        guard !editingText.isEmpty else {
+            // 空の場合、編集中だった既存注釈は削除
+            if let annotationId = editingAnnotationId {
+                viewModel.deleteAnnotation(id: annotationId)
+            }
             return
         }
 
@@ -306,9 +331,35 @@ struct AnnotationCanvas: View {
             y: editingPosition.y * scale.height
         )
 
-        viewModel.addTextAnnotation(at: scaledPosition, text: editingText)
-        isEditing = false
-        editingText = ""
+        if let annotationId = editingAnnotationId {
+            // 既存の注釈を更新
+            viewModel.updateTextAnnotation(id: annotationId, text: editingText)
+        } else {
+            // 新規作成
+            viewModel.addTextAnnotation(at: scaledPosition, text: editingText)
+        }
+    }
+
+    private func startEditingTextAnnotation(_ annotation: Annotation) {
+        guard annotation.type == .text, let text = annotation.text else { return }
+
+        let scale = CGSize(
+            width: imageSize.width / canvasSize.width,
+            height: imageSize.height / canvasSize.height
+        )
+
+        // 画像座標系からキャンバス座標系に変換
+        editingPosition = CGPoint(
+            x: annotation.endPoint.x / scale.width,
+            y: annotation.endPoint.y / scale.height
+        )
+        editingText = text
+        editingAnnotationId = annotation.id
+        isEditing = true
+        isTextFieldFocused = true
+
+        // 編集中は選択解除
+        viewModel.deselectAnnotation()
     }
 
     private func drawAnnotation(_ annotation: Annotation, context: inout GraphicsContext, scale: CGSize) {

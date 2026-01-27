@@ -20,7 +20,6 @@ final class SelectionOverlayWindow: NSWindow {
     private let screenFrame: CGRect
     private var localEventMonitor: Any?
     private var globalEventMonitor: Any?
-    private var keepAliveTimer: Timer?
 
     init(screen: NSScreen, onSelection: @escaping (CGRect) -> Void, onCancel: @escaping () -> Void) {
         self.onSelection = onSelection
@@ -65,10 +64,14 @@ final class SelectionOverlayWindow: NSWindow {
             }
         }
 
-        // ウィンドウをアクティブに保つタイマー
-        keepAliveTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            if !self.isKeyWindow {
+        // キーウィンドウでなくなったときに再アクティブ化
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification,
+            object: self,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self, self.isVisible else { return }
+            DispatchQueue.main.async {
                 self.makeKeyAndOrderFront(nil)
                 NSApp.activate(ignoringOtherApps: true)
             }
@@ -78,6 +81,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     func cleanup() {
+        NotificationCenter.default.removeObserver(self)
         if let monitor = localEventMonitor {
             NSEvent.removeMonitor(monitor)
             localEventMonitor = nil
@@ -86,8 +90,6 @@ final class SelectionOverlayWindow: NSWindow {
             NSEvent.removeMonitor(monitor)
             globalEventMonitor = nil
         }
-        keepAliveTimer?.invalidate()
-        keepAliveTimer = nil
     }
 
     override var canBecomeKey: Bool { true }

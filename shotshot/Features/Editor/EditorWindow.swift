@@ -388,7 +388,7 @@ enum ToolType: CaseIterable {
 
     var iconName: String {
         switch self {
-        case .select: return "arrow.up.left"
+        case .select: return "cursorarrow"
         case .crop: return "crop"
         case .arrow: return "arrow.up.right"
         case .rectangle: return "rectangle"

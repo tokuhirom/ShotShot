@@ -24,10 +24,15 @@ struct ImageExporter {
         let fileManager = FileManager.default
         let directoryURL = URL(fileURLWithPath: directory)
 
+        print("[ImageExporter] Saving to directory: \(directory)")
+        print("[ImageExporter] Directory exists: \(fileManager.fileExists(atPath: directory))")
+
         if !fileManager.fileExists(atPath: directory) {
             do {
                 try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+                print("[ImageExporter] Created directory: \(directory)")
             } catch {
+                print("[ImageExporter] Failed to create directory: \(error)")
                 throw ExportError.failedToCreateDirectory
             }
         }

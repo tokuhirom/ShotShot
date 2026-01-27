@@ -33,8 +33,8 @@ final class AppSettings {
     }
 
     private init() {
-        let picturesPath = NSSearchPathForDirectoriesInDomains(.picturesDirectory, .userDomainMask, true).first ?? "~/Pictures"
-        let defaultSavePath = (picturesPath as NSString).appendingPathComponent("shotshot")
+        let appSupportPath = NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true).first ?? "~/Library/Application Support"
+        let defaultSavePath = (appSupportPath as NSString).appendingPathComponent("ShotShot/Screenshots")
 
         self.savePath = defaults.string(forKey: Keys.savePath) ?? defaultSavePath
         self.hotkeyModifiers = UInt32(defaults.integer(forKey: Keys.hotkeyModifiers))

@@ -23,6 +23,10 @@ struct EditorWindow: View {
                 Button("") { viewModel.redo() }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
                     .opacity(0)
+                // ⌘C: クリップボードにコピー
+                Button("") { viewModel.copyToClipboard() }
+                    .keyboardShortcut("c", modifiers: .command)
+                    .opacity(0)
                 // Delete: 選択中の注釈を削除
                 Button("") { viewModel.deleteSelectedAnnotation() }
                     .keyboardShortcut(.delete, modifiers: [])

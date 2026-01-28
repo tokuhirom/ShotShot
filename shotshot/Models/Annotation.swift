@@ -8,6 +8,28 @@ enum AnnotationType: Sendable {
     case mosaic
 }
 
+enum MosaicType: String, CaseIterable, Sendable {
+    case pixelateFine = "pixelate_fine"
+    case pixelateCoarse = "pixelate_coarse"
+    case blur = "blur"
+
+    var displayName: String {
+        switch self {
+        case .pixelateFine: return "モザイク（細）"
+        case .pixelateCoarse: return "モザイク（粗）"
+        case .blur: return "ぼかし"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .pixelateFine: return "square.grid.3x3"
+        case .pixelateCoarse: return "square.grid.2x2"
+        case .blur: return "drop.circle"
+        }
+    }
+}
+
 struct Annotation: Identifiable, Sendable {
     let id: UUID
     let type: AnnotationType
@@ -18,6 +40,7 @@ struct Annotation: Identifiable, Sendable {
     var text: String?
     var fontSize: CGFloat?
     var cornerRadius: CGFloat?
+    var mosaicType: MosaicType?
 
     init(
         id: UUID = UUID(),
@@ -28,7 +51,8 @@ struct Annotation: Identifiable, Sendable {
         lineWidth: CGFloat = 3.0,
         text: String? = nil,
         fontSize: CGFloat? = nil,
-        cornerRadius: CGFloat? = nil
+        cornerRadius: CGFloat? = nil,
+        mosaicType: MosaicType? = nil
     ) {
         self.id = id
         self.type = type
@@ -39,6 +63,7 @@ struct Annotation: Identifiable, Sendable {
         self.text = text
         self.fontSize = fontSize
         self.cornerRadius = cornerRadius
+        self.mosaicType = mosaicType
     }
 
     /// テキスト注釈の境界矩形を計算（画像座標系）

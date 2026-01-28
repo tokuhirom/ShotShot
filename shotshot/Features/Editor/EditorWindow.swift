@@ -130,6 +130,30 @@ struct EditorWindow: View {
             } else if viewModel.selectedTool == .select {
                 // 選択ツール: 何も表示しない
                 EmptyView()
+            } else if viewModel.selectedTool == .mosaic {
+                // モザイク: タイプ選択
+                HStack(spacing: 8) {
+                    ForEach(MosaicType.allCases, id: \.self) { type in
+                        Button(action: { viewModel.mosaicType = type }) {
+                            VStack(spacing: 2) {
+                                Image(systemName: type.iconName)
+                                    .font(.title3)
+                                Text(type.displayName)
+                                    .font(.system(size: 9))
+                            }
+                            .frame(width: 60, height: 40)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(viewModel.mosaicType == type ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(viewModel.mosaicType == type ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             } else {
                 // その他: 線幅のみ
                 HStack(spacing: 4) {

@@ -24,6 +24,7 @@ final class AppSettings {
         static let lineWidth = "lineWidth"
         static let fontSize = "fontSize"
         static let useRoundedCorners = "useRoundedCorners"
+        static let mosaicType = "mosaicType"
     }
 
     // デフォルト値
@@ -73,6 +74,10 @@ final class AppSettings {
         didSet { defaults.set(useRoundedCorners, forKey: Keys.useRoundedCorners) }
     }
 
+    var mosaicType: MosaicType = .pixelateFine {
+        didSet { defaults.set(mosaicType.rawValue, forKey: Keys.mosaicType) }
+    }
+
     private init() {
         let appSupportPath = NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true).first ?? "~/Library/Application Support"
         let defaultSavePath = (appSupportPath as NSString).appendingPathComponent("ShotShot/Screenshots")
@@ -115,6 +120,14 @@ final class AppSettings {
             self.useRoundedCorners = defaults.bool(forKey: Keys.useRoundedCorners)
         } else {
             self.useRoundedCorners = true
+        }
+
+        // モザイクタイプの読み込み（デフォルト: pixelateFine）
+        if let storedMosaicType = defaults.string(forKey: Keys.mosaicType),
+           let mosaicType = MosaicType(rawValue: storedMosaicType) {
+            self.mosaicType = mosaicType
+        } else {
+            self.mosaicType = .pixelateFine
         }
     }
 }

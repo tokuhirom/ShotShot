@@ -22,6 +22,9 @@ final class EditorViewModel {
     var useRoundedCorners: Bool {
         didSet { AppSettings.shared.useRoundedCorners = useRoundedCorners }
     }
+    var mosaicType: MosaicType {
+        didSet { AppSettings.shared.mosaicType = mosaicType }
+    }
     var statusMessage: String = ""
 
     // Undo/Redo stacks
@@ -53,6 +56,7 @@ final class EditorViewModel {
         self.lineWidth = settings.lineWidth
         self.fontSize = settings.fontSize
         self.useRoundedCorners = settings.useRoundedCorners
+        self.mosaicType = settings.mosaicType
     }
 
     // MARK: - Undo/Redo
@@ -124,7 +128,8 @@ final class EditorViewModel {
             color: selectedColor,
             lineWidth: lineWidth,
             fontSize: fontSize,
-            cornerRadius: (annotationType == .rectangle && useRoundedCorners) ? 8.0 : nil
+            cornerRadius: (annotationType == .rectangle && useRoundedCorners) ? 8.0 : nil,
+            mosaicType: annotationType == .mosaic ? mosaicType : nil
         )
     }
 

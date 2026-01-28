@@ -15,7 +15,7 @@ struct SettingsView: View {
                     Label("ショートカット", systemImage: "keyboard")
                 }
         }
-        .frame(width: 450, height: 250)
+        .frame(minWidth: 400, minHeight: 200)
     }
 }
 
@@ -46,39 +46,76 @@ struct HotkeySettingsView: View {
 
     var body: some View {
         Form {
-            Section {
-                HStack {
-                    Text("キャプチャ:")
+            Section("キャプチャのショートカット") {
+                VStack(alignment: .leading, spacing: 12) {
+                    // 修飾キー（2行に分けて配置）
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("修飾キー:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
-                    HStack(spacing: 4) {
-                        Toggle("Control", isOn: $viewModel.useControl)
-                            .toggleStyle(.checkbox)
-                        Toggle("Shift", isOn: $viewModel.useShift)
-                            .toggleStyle(.checkbox)
-                        Toggle("Option", isOn: $viewModel.useOption)
-                            .toggleStyle(.checkbox)
-                        Toggle("Command", isOn: $viewModel.useCommand)
-                            .toggleStyle(.checkbox)
+                        HStack(spacing: 16) {
+                            Toggle("⌃ Control", isOn: $viewModel.useControl)
+                                .toggleStyle(.checkbox)
+                            Toggle("⇧ Shift", isOn: $viewModel.useShift)
+                                .toggleStyle(.checkbox)
+                        }
+                        HStack(spacing: 16) {
+                            Toggle("⌥ Option", isOn: $viewModel.useOption)
+                                .toggleStyle(.checkbox)
+                            Toggle("⌘ Command", isOn: $viewModel.useCommand)
+                                .toggleStyle(.checkbox)
+                        }
                     }
 
-                    Text("+")
+                    Divider()
 
-                    TextField("キー", text: $viewModel.hotkeyKey)
-                        .frame(width: 40)
-                        .textFieldStyle(.roundedBorder)
-                }
+                    // キー入力
+                    HStack {
+                        Text("キー:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
-                Button("ホットキーを更新") {
-                    viewModel.updateHotkey()
-                }
+                        TextField("", text: $viewModel.hotkeyKey)
+                            .frame(width: 50)
+                            .textFieldStyle(.roundedBorder)
 
-                if !viewModel.hotkeyStatus.isEmpty {
-                    Text(viewModel.hotkeyStatus)
-                        .foregroundColor(viewModel.hotkeyStatusIsError ? .red : .green)
-                        .font(.caption)
+                        Text("(例: 4, S, A など)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    // 現在のショートカット表示
+                    HStack {
+                        Text("現在:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(viewModel.currentHotkeyDisplay)
+                            .font(.system(.body, design: .monospaced))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Button("ホットキーを更新") {
+                            viewModel.updateHotkey()
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        if !viewModel.hotkeyStatus.isEmpty {
+                            Text(viewModel.hotkeyStatus)
+                                .foregroundColor(viewModel.hotkeyStatusIsError ? .red : .green)
+                                .font(.caption)
+                        }
+                    }
                 }
             }
         }
+        .formStyle(.grouped)
         .padding()
     }
 }

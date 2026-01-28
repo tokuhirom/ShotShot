@@ -1,6 +1,77 @@
 import AppKit
 import SwiftUI
 
+// IME対応のテキストビュー
+struct IMEAwareTextField: NSViewRepresentable {
+    @Binding var text: String
+    var displayText: Binding<String>  // 表示用（縁取り用）
+    var font: NSFont
+    var textColor: NSColor
+    var onCommit: () -> Void
+
+    func makeNSView(context: Context) -> NSTextView {
+        let textView = NSTextView()
+        textView.isRichText = false
+        textView.font = font
+        textView.textColor = textColor
+        textView.backgroundColor = .clear
+        textView.drawsBackground = false
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = true
+        textView.autoresizingMask = [.width, .height]
+        textView.textContainer?.widthTracksTextView = false
+        textView.textContainer?.heightTracksTextView = false
+        textView.textContainer?.containerSize = NSSize(width: 10000, height: 10000)
+        textView.isFieldEditor = false
+        textView.delegate = context.coordinator
+        return textView
+    }
+
+    func updateNSView(_ nsView: NSTextView, context: Context) {
+        // 初期テキストの設定（初回のみ）
+        if context.coordinator.isFirstUpdate && !text.isEmpty {
+            nsView.string = text
+            context.coordinator.isFirstUpdate = false
+        }
+        nsView.font = font
+        nsView.textColor = textColor
+
+        // 初回表示時にフォーカスを設定
+        DispatchQueue.main.async {
+            if nsView.window?.firstResponder != nsView {
+                nsView.window?.makeFirstResponder(nsView)
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: IMEAwareTextField
+        var isFirstUpdate = true
+
+        init(_ parent: IMEAwareTextField) {
+            self.parent = parent
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            // 表示用テキストは常に更新（縁取り表示用）
+            parent.displayText.wrappedValue = textView.string
+        }
+
+        func textDidEndEditing(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            // 確定時のみ実際のテキストを更新
+            parent.text = textView.string
+            parent.displayText.wrappedValue = textView.string
+            parent.onCommit()
+        }
+    }
+}
+
 enum ResizeHandle {
     case startPoint      // startPoint を動かす
     case endPoint        // endPoint を動かす
@@ -13,7 +84,8 @@ struct AnnotationCanvas: View {
     let canvasSize: CGSize
     let imageSize: NSSize
     @State private var isEditing = false
-    @State private var editingText = ""
+    @State private var editingText = ""  // 確定済みテキスト
+    @State private var displayText = ""  // 表示用テキスト（IME入力中も更新）
     @State private var editingPosition: CGPoint = .zero
     @State private var editingAnnotationId: UUID? = nil  // 編集中のテキスト注釈ID（nilなら新規作成）
     @State private var isDraggingAnnotation = false
@@ -63,48 +135,64 @@ struct AnnotationCanvas: View {
                     }
             )
 
-            if isEditing && viewModel.selectedTool == .text {
+            if isEditing {
+                // 表示スケールを計算
+                let displayScale = canvasSize.height / imageSize.height
+                let scaledFontSize = viewModel.fontSize * displayScale
+
                 VStack {
                     HStack {
                         ZStack(alignment: .leading) {
-                            // 縁取り用テキスト（白）
-                            let strokeWidth: CGFloat = viewModel.fontSize * 0.08
+                            // 縁取り用テキスト（白）- displayTextを使用
+                            let strokeWidth: CGFloat = scaledFontSize * 0.08
                             let offsets: [(CGFloat, CGFloat)] = [
                                 (-strokeWidth, -strokeWidth), (0, -strokeWidth), (strokeWidth, -strokeWidth),
                                 (-strokeWidth, 0), (strokeWidth, 0),
                                 (-strokeWidth, strokeWidth), (0, strokeWidth), (strokeWidth, strokeWidth)
                             ]
                             ForEach(0..<offsets.count, id: \.self) { i in
-                                Text(editingText.isEmpty ? " " : editingText)
-                                    .font(.system(size: viewModel.fontSize, weight: .bold))
+                                Text(displayText.isEmpty ? " " : displayText)
+                                    .font(.system(size: scaledFontSize, weight: .bold))
                                     .foregroundColor(.white)
                                     .offset(x: offsets[i].0, y: offsets[i].1)
                             }
 
-                            // 入力フィールド
-                            TextField("", text: $editingText, onCommit: {
-                                finishTextEditing()
-                            })
-                            .textFieldStyle(.plain)
-                            .font(.system(size: viewModel.fontSize, weight: .bold))
-                            .foregroundColor(Color(nsColor: viewModel.selectedColor))
-                            .focused($isTextFieldFocused)
-                            .onChange(of: isTextFieldFocused) { _, focused in
-                                // フォーカスが外れたらテキストを確定
-                                if !focused && isEditing {
+                            // IME対応入力フィールド
+                            IMEAwareTextField(
+                                text: $editingText,
+                                displayText: $displayText,
+                                font: NSFont.boldSystemFont(ofSize: scaledFontSize),
+                                textColor: viewModel.selectedColor,
+                                onCommit: {
                                     finishTextEditing()
                                 }
-                            }
+                            )
+                            .frame(minWidth: 100, minHeight: scaledFontSize * 1.5)
                         }
                         .fixedSize()
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.black.opacity(0.3))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.accentColor, lineWidth: 2)
+                        )
                         Spacer()
                     }
                     .padding(.leading, editingPosition.x)
                     .padding(.top, editingPosition.y)
                     Spacer()
                 }
-                .onAppear {
-                    isTextFieldFocused = true
+            }
+        }
+        .onChange(of: viewModel.selectedTool) { _, _ in
+            // ツール切替時にテキスト編集中ならIMEを確定
+            if isEditing {
+                if let window = NSApp.keyWindow {
+                    window.makeFirstResponder(nil)
                 }
             }
         }
@@ -113,7 +201,11 @@ struct AnnotationCanvas: View {
     private func handleDrag(_ value: DragGesture.Value) {
         // テキスト編集中に他の場所をクリックしたら編集を終了
         if isEditing {
-            finishTextEditing()
+            // IMEの未確定文字列を確定させるため、フォーカスを外す
+            if let window = NSApp.keyWindow {
+                window.makeFirstResponder(nil)
+            }
+            // finishTextEditingはcontrolTextDidEndEditingから呼ばれる
             return
         }
 
@@ -307,13 +399,17 @@ struct AnnotationCanvas: View {
     }
 
     private func finishTextEditing() {
+        // displayTextを使用（最新の入力内容）
+        let finalText = displayText
+
         defer {
             isEditing = false
             editingText = ""
+            displayText = ""
             editingAnnotationId = nil
         }
 
-        guard !editingText.isEmpty else {
+        guard !finalText.isEmpty else {
             // 空の場合、編集中だった既存注釈は削除
             if let annotationId = editingAnnotationId {
                 viewModel.deleteAnnotation(id: annotationId)
@@ -333,10 +429,10 @@ struct AnnotationCanvas: View {
 
         if let annotationId = editingAnnotationId {
             // 既存の注釈を更新
-            viewModel.updateTextAnnotation(id: annotationId, text: editingText)
+            viewModel.updateTextAnnotation(id: annotationId, text: finalText)
         } else {
             // 新規作成
-            viewModel.addTextAnnotation(at: scaledPosition, text: editingText)
+            viewModel.addTextAnnotation(at: scaledPosition, text: finalText)
         }
     }
 
@@ -354,9 +450,9 @@ struct AnnotationCanvas: View {
             y: annotation.endPoint.y / scale.height
         )
         editingText = text
+        displayText = text
         editingAnnotationId = annotation.id
         isEditing = true
-        isTextFieldFocused = true
 
         // 編集中は選択解除
         viewModel.deselectAnnotation()
@@ -379,7 +475,9 @@ struct AnnotationCanvas: View {
             drawRectangle(from: displayStart, to: displayEnd, color: annotation.color, lineWidth: annotation.lineWidth, cornerRadius: annotation.cornerRadius, context: &context)
         case .text:
             if let text = annotation.text {
-                drawText(text, at: displayEnd, color: annotation.color, fontSize: annotation.fontSize ?? 16, context: &context)
+                // フォントサイズも表示スケールに合わせる
+                let scaledFontSize = (annotation.fontSize ?? 16) / scale.height
+                drawText(text, at: displayEnd, color: annotation.color, fontSize: scaledFontSize, context: &context)
             }
         case .mosaic:
             drawMosaicPreview(from: displayStart, to: displayEnd, context: &context)
@@ -542,14 +640,17 @@ struct AnnotationCanvas: View {
                 height: abs(displayEnd.y - displayStart.y) + 8
             )
         case .text:
-            let fontSize = annotation.fontSize ?? 16.0
-            let textWidth = CGFloat((annotation.text ?? "").count) * fontSize * 0.6
-            selectionRect = CGRect(
-                x: displayEnd.x - 4,
-                y: displayEnd.y - 4,
-                width: max(textWidth, 20) + 8,
-                height: fontSize * 1.2 + 8
-            )
+            // テキストも表示スケールに合わせて描画されるので、boundsもスケールする
+            if let bounds = annotation.textBounds() {
+                selectionRect = CGRect(
+                    x: displayEnd.x - 4,
+                    y: displayEnd.y - 4,
+                    width: bounds.width / scale.width + 8,
+                    height: bounds.height / scale.height + 8
+                )
+            } else {
+                selectionRect = CGRect(x: displayEnd.x - 4, y: displayEnd.y - 4, width: 28, height: 28)
+            }
         }
 
         let path = Path(selectionRect)

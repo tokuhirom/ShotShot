@@ -403,20 +403,9 @@ final class EditorViewModel {
     }
 
     private func textContainsPoint(_ annotation: Annotation, _ point: CGPoint) -> Bool {
-        guard let text = annotation.text, !text.isEmpty else { return false }
-        let fontSize = annotation.fontSize ?? 16.0
-
-        // テキストの大まかなサイズを推定（日本語も考慮して1文字≒fontSizeとする）
-        let estimatedWidth = max(CGFloat(text.count) * fontSize * 0.8, 50)
-        let estimatedHeight = fontSize * 1.5
-
-        let rect = CGRect(
-            x: annotation.endPoint.x,
-            y: annotation.endPoint.y,
-            width: estimatedWidth,
-            height: estimatedHeight
-        )
-        let expandedRect = rect.insetBy(dx: -15, dy: -15)
+        guard let bounds = annotation.textBounds() else { return false }
+        let padding: CGFloat = 15
+        let expandedRect = bounds.insetBy(dx: -padding, dy: -padding)
         return expandedRect.contains(point)
     }
 
@@ -452,6 +441,30 @@ final class EditorViewModel {
 
     func cancel() {
         NSApp.keyWindow?.close()
+    }
+
+    func saveAs() {
+        let finalImage = renderFinalImage()
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = ImageExporter.generateFilename()
+        panel.canCreateDirectories = true
+
+        if panel.runModal() == .OK, let url = panel.url {
+            do {
+                guard let tiffData = finalImage.tiffRepresentation,
+                      let bitmap = NSBitmapImageRep(data: tiffData),
+                      let pngData = bitmap.representation(using: .png, properties: [:]) else {
+                    statusMessage = "画像の変換に失敗しました"
+                    return
+                }
+                try pngData.write(to: url)
+                statusMessage = "保存しました: \(url.lastPathComponent)"
+            } catch {
+                statusMessage = "保存に失敗しました: \(error.localizedDescription)"
+            }
+        }
     }
 
     private func renderFinalImage() -> NSImage {

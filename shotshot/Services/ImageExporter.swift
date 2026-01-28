@@ -67,7 +67,7 @@ struct ImageExporter {
         return try save(screenshot, to: directory, filename: filename)
     }
 
-    private static func generateFilename() -> String {
+    static func generateFilename() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
         return "ShotShot_\(formatter.string(from: Date()))"

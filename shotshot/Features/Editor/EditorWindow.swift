@@ -27,6 +27,10 @@ struct EditorWindow: View {
                 Button("") { viewModel.copyToClipboard() }
                     .keyboardShortcut("c", modifiers: .command)
                     .opacity(0)
+                // ⌘S: 名前を付けて保存
+                Button("") { viewModel.saveAs() }
+                    .keyboardShortcut("s", modifiers: .command)
+                    .opacity(0)
                 // Delete: 選択中の注釈を削除
                 Button("") { viewModel.deleteSelectedAnnotation() }
                     .keyboardShortcut(.delete, modifiers: [])
@@ -227,7 +231,6 @@ struct EditorWindow: View {
                 viewModel.done()
             }
             .buttonStyle(.borderedProminent)
-            .keyboardShortcut(.return, modifiers: [])
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -256,8 +259,15 @@ struct ToolButton: View {
             Image(systemName: tool.iconName)
                 .font(.title2)
                 .frame(width: 32, height: 32)
-                .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
-                .cornerRadius(6)
+                .foregroundColor(isSelected ? Color.accentColor : Color.primary)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 1)
+                )
         }
         .buttonStyle(.plain)
         .help(tool.displayName)

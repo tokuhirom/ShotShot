@@ -29,6 +29,16 @@ final class SettingsViewModel {
     var hotkeyStatus: String = ""
     var hotkeyStatusIsError: Bool = false
 
+    var currentHotkeyDisplay: String {
+        var parts: [String] = []
+        if useControl { parts.append("⌃") }
+        if useShift { parts.append("⇧") }
+        if useOption { parts.append("⌥") }
+        if useCommand { parts.append("⌘") }
+        parts.append(hotkeyKey.uppercased())
+        return parts.joined()
+    }
+
     init() {
         self.savePath = settings.savePath
         self.copyToClipboard = settings.copyToClipboard

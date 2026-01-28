@@ -159,17 +159,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func openSettings() {
+        print("[shotshot] openSettings called")
+
         // 既存のウィンドウがあれば前面に
         if let window = settingsWindow, window.isVisible {
+            print("[shotshot] Existing settings window found, bringing to front")
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
 
+        print("[shotshot] Creating new settings window")
         let settingsView = SettingsView()
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 450, height: 280),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 350),
+            styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -181,6 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         settingsWindow = window
         NSApp.activate(ignoringOtherApps: true)
+        print("[shotshot] Settings window created and shown")
     }
 
     private func showPermissionAlert() {

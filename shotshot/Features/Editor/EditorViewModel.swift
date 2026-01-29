@@ -37,6 +37,9 @@ final class EditorViewModel {
     // クロップ状態（画像座標系で保持）
     var cropRect: CGRect? = nil
 
+    // 編集中テキストのバウンズ（画像座標系）- キャンバス拡張用
+    var editingTextBounds: CGRect? = nil
+
     var selectedColorBinding: Color {
         get { Color(nsColor: selectedColor) }
         set { selectedColor = NSColor(newValue) }
@@ -46,6 +49,49 @@ final class EditorViewModel {
     var canRedo: Bool { !redoStack.isEmpty }
 
     private var currentAnnotation: Annotation?
+
+    /// キャンバス拡張時の余白（画像座標系でのピクセル数）
+    private let expandPadding: CGFloat = 12
+
+    /// 全注釈と元画像を包含する拡張バウンディングボックス（画像座標系）
+    var expandedBounds: CGRect {
+        let imageRect = CGRect(origin: .zero, size: screenshot.image.size)
+        var bounds = imageRect
+        for annotation in annotations {
+            bounds = bounds.union(annotation.bounds())
+        }
+        if let current = currentAnnotation {
+            bounds = bounds.union(current.bounds())
+        }
+        // 編集中テキストのバウンズも含める
+        if let textBounds = editingTextBounds {
+            bounds = bounds.union(textBounds)
+        }
+        // 拡張が必要な場合のみパディングを追加
+        if bounds != imageRect {
+            bounds = bounds.insetBy(dx: -expandPadding, dy: -expandPadding)
+            // パディングで元画像領域を超えた分のみ反映（元画像内にはパディング不要）
+            bounds = bounds.union(imageRect)
+        }
+        return bounds
+    }
+
+    /// 拡張キャンバスの原点から元画像原点までのオフセット
+    var imageOffset: CGPoint {
+        let eb = expandedBounds
+        return CGPoint(x: -eb.origin.x, y: -eb.origin.y)
+    }
+
+    /// 拡張後の画像サイズ（画像座標系）
+    var expandedImageSize: CGSize {
+        return expandedBounds.size
+    }
+
+    /// キャンバス拡張が必要かどうか
+    var needsExpansion: Bool {
+        let imageRect = CGRect(origin: .zero, size: screenshot.image.size)
+        return expandedBounds != imageRect
+    }
 
     init(screenshot: Screenshot) {
         self.screenshot = screenshot
@@ -475,14 +521,60 @@ final class EditorViewModel {
     private func renderFinalImage() -> NSImage {
         guard let cgImage = screenshot.cgImage else { return screenshot.image }
 
-        let width = cgImage.width
-        let height = cgImage.height
+        let scaleFactor = screenshot.scaleFactor
+        let eb = expandedBounds
+        let offset = imageOffset
+
+        let origPixelWidth = cgImage.width
+        let origPixelHeight = cgImage.height
+
+        let expandedPixelWidth = Int(eb.width * scaleFactor)
+        let expandedPixelHeight = Int(eb.height * scaleFactor)
 
         let colorSpace = CGColorSpaceCreateDeviceRGB()
+
+        // 拡張不要の場合は従来通り
+        let isExpanded = offset.x != 0 || offset.y != 0
+            || expandedPixelWidth != origPixelWidth
+            || expandedPixelHeight != origPixelHeight
+
+        if !isExpanded {
+            guard let context = CGContext(
+                data: nil,
+                width: origPixelWidth,
+                height: origPixelHeight,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            ) else {
+                return screenshot.image
+            }
+
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: origPixelWidth, height: origPixelHeight))
+
+            let nsContext = NSGraphicsContext(cgContext: context, flipped: false)
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = nsContext
+
+            for annotation in annotations {
+                drawAnnotation(annotation, in: context, imageSize: CGSize(width: origPixelWidth, height: origPixelHeight), scaleFactor: scaleFactor)
+            }
+
+            NSGraphicsContext.restoreGraphicsState()
+
+            guard let finalCGImage = context.makeImage() else {
+                return screenshot.image
+            }
+
+            return NSImage(cgImage: finalCGImage, size: screenshot.image.size)
+        }
+
+        // 拡張キャンバスで描画
         guard let context = CGContext(
             data: nil,
-            width: width,
-            height: height,
+            width: expandedPixelWidth,
+            height: expandedPixelHeight,
             bitsPerComponent: 8,
             bytesPerRow: 0,
             space: colorSpace,
@@ -491,14 +583,31 @@ final class EditorViewModel {
             return screenshot.image
         }
 
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        // 白背景で塗りつぶし
+        context.setFillColor(CGColor.white)
+        context.fill(CGRect(x: 0, y: 0, width: expandedPixelWidth, height: expandedPixelHeight))
+
+        // 元画像を offset 位置に描画（CGContext は Y 反転: 左下原点）
+        let imgX = offset.x * scaleFactor
+        let imgY = CGFloat(expandedPixelHeight) - offset.y * scaleFactor - CGFloat(origPixelHeight)
+        context.draw(cgImage, in: CGRect(x: imgX, y: imgY,
+                                          width: CGFloat(origPixelWidth),
+                                          height: CGFloat(origPixelHeight)))
+
+        // 注釈を offset 補正して描画
+        let expandedImageSize = CGSize(width: expandedPixelWidth, height: expandedPixelHeight)
 
         let nsContext = NSGraphicsContext(cgContext: context, flipped: false)
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = nsContext
 
         for annotation in annotations {
-            drawAnnotation(annotation, in: context, imageSize: CGSize(width: width, height: height), scaleFactor: screenshot.scaleFactor)
+            var adjusted = annotation
+            adjusted.startPoint.x += offset.x
+            adjusted.startPoint.y += offset.y
+            adjusted.endPoint.x += offset.x
+            adjusted.endPoint.y += offset.y
+            drawAnnotation(adjusted, in: context, imageSize: expandedImageSize, scaleFactor: scaleFactor)
         }
 
         NSGraphicsContext.restoreGraphicsState()
@@ -507,7 +616,7 @@ final class EditorViewModel {
             return screenshot.image
         }
 
-        return NSImage(cgImage: finalCGImage, size: screenshot.image.size)
+        return NSImage(cgImage: finalCGImage, size: eb.size)
     }
 
     private func drawAnnotation(_ annotation: Annotation, in context: CGContext, imageSize: CGSize, scaleFactor: CGFloat) {

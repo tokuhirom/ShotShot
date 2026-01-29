@@ -203,29 +203,44 @@ struct EditorWindow: View {
             ZStack {
                 Color(nsColor: .controlBackgroundColor)
 
+                let expandedSize = viewModel.expandedImageSize
                 let imageSize = viewModel.screenshot.image.size
-                let scaledSize = scaledImageSize(imageSize: imageSize, containerSize: geometry.size)
-                let scale = scaledSize.width / imageSize.width
+                let offset = viewModel.imageOffset
+                let scaledSize = scaledImageSize(imageSize: expandedSize, containerSize: geometry.size)
+                let displayScaleValue = scaledSize.width / expandedSize.width
 
-                ZStack {
-                    Image(nsImage: viewModel.compositeImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
+                ZStack(alignment: .topLeading) {
+                    // 白背景（拡張エリア全体）
+                    Color.white
                         .frame(width: scaledSize.width, height: scaledSize.height)
 
+                    // 元画像を offset 位置に配置
+                    Image(nsImage: viewModel.compositeImage)
+                        .resizable()
+                        .frame(
+                            width: imageSize.width * displayScaleValue,
+                            height: imageSize.height * displayScaleValue
+                        )
+                        .offset(
+                            x: offset.x * displayScaleValue,
+                            y: offset.y * displayScaleValue
+                        )
+
+                    // 注釈キャンバス（フルサイズ）
                     AnnotationCanvas(
                         viewModel: viewModel,
                         canvasSize: scaledSize,
-                        imageSize: imageSize
+                        expandedSize: expandedSize,
+                        imageOffset: offset
                     )
                     .frame(width: scaledSize.width, height: scaledSize.height)
                 }
                 .onAppear {
-                    displayScale = scale
+                    displayScale = displayScaleValue
                 }
                 .onChange(of: geometry.size) { _, _ in
-                    let newScaledSize = scaledImageSize(imageSize: imageSize, containerSize: geometry.size)
-                    displayScale = newScaledSize.width / imageSize.width
+                    let newScaledSize = scaledImageSize(imageSize: expandedSize, containerSize: geometry.size)
+                    displayScale = newScaledSize.width / expandedSize.width
                 }
             }
         }

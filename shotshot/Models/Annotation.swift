@@ -66,28 +66,69 @@ struct Annotation: Identifiable, Sendable {
         self.mosaicType = mosaicType
     }
 
+    /// 注釈のバウンディングボックスを返す（画像座標系）
+    func bounds() -> CGRect {
+        switch type {
+        case .arrow:
+            let margin = lineWidth * 6
+            return CGRect(
+                x: min(startPoint.x, endPoint.x) - margin,
+                y: min(startPoint.y, endPoint.y) - margin,
+                width: abs(endPoint.x - startPoint.x) + margin * 2,
+                height: abs(endPoint.y - startPoint.y) + margin * 2
+            )
+        case .rectangle:
+            let margin = lineWidth + 4
+            return CGRect(
+                x: min(startPoint.x, endPoint.x) - margin,
+                y: min(startPoint.y, endPoint.y) - margin,
+                width: abs(endPoint.x - startPoint.x) + margin * 2,
+                height: abs(endPoint.y - startPoint.y) + margin * 2
+            )
+        case .text:
+            return textBounds() ?? CGRect(origin: endPoint, size: CGSize(width: 50, height: 20))
+        case .mosaic:
+            return CGRect(
+                x: min(startPoint.x, endPoint.x),
+                y: min(startPoint.y, endPoint.y),
+                width: abs(endPoint.x - startPoint.x),
+                height: abs(endPoint.y - startPoint.y)
+            )
+        }
+    }
+
     /// テキスト注釈の境界矩形を計算（画像座標系）
     func textBounds() -> CGRect? {
         guard type == .text, let text = text, !text.isEmpty else { return nil }
         let fontSize = self.fontSize ?? 16.0
 
-        let lines = text.components(separatedBy: "\n")
-        let lineCount = max(lines.count, 1)
-        let maxLineLength = lines.map { $0.count }.max() ?? 0
-
-        // NSFont を使って正確なメトリクスを取得
         let font = NSFont.boldSystemFont(ofSize: fontSize)
-        let lineHeight = font.ascender - font.descender + font.leading
-
-        // 日本語文字も考慮した幅の推定
-        let estimatedWidth = max(CGFloat(maxLineLength) * fontSize * 0.7, 50)
-        let estimatedHeight = lineHeight * CGFloat(lineCount)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        let nsString = text as NSString
+        let size = nsString.size(withAttributes: attributes)
 
         return CGRect(
             x: endPoint.x,
             y: endPoint.y,
-            width: estimatedWidth,
-            height: estimatedHeight
+            width: max(size.width, 50),
+            height: max(size.height, fontSize * 1.2)
+        )
+    }
+
+    /// 任意のテキストとフォントサイズで境界矩形を計算するスタティックメソッド
+    static func computeTextBounds(text: String, fontSize: CGFloat, origin: CGPoint) -> CGRect {
+        guard !text.isEmpty else {
+            return CGRect(origin: origin, size: CGSize(width: 50, height: fontSize * 1.2))
+        }
+        let font = NSFont.boldSystemFont(ofSize: fontSize)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        let nsString = text as NSString
+        let size = nsString.size(withAttributes: attributes)
+        return CGRect(
+            x: origin.x,
+            y: origin.y,
+            width: max(size.width, 50),
+            height: max(size.height, fontSize * 1.2)
         )
     }
 }

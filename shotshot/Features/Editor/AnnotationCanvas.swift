@@ -82,11 +82,13 @@ enum ResizeHandle {
 struct AnnotationCanvas: View {
     @Bindable var viewModel: EditorViewModel
     let canvasSize: CGSize
-    let imageSize: NSSize
+    let expandedSize: CGSize
+    let imageOffset: CGPoint
     @State private var isEditing = false
     @State private var editingText = ""  // 確定済みテキスト
     @State private var displayText = ""  // 表示用テキスト（IME入力中も更新）
-    @State private var editingPosition: CGPoint = .zero
+    @State private var editingPosition: CGPoint = .zero  // 表示座標
+    @State private var editingImagePosition: CGPoint = .zero  // 画像座標（拡張計算用に固定保持）
     @State private var editingAnnotationId: UUID? = nil  // 編集中のテキスト注釈ID（nilなら新規作成）
     @State private var isDraggingAnnotation = false
     @State private var isResizingAnnotation = false
@@ -101,8 +103,8 @@ struct AnnotationCanvas: View {
         ZStack {
             Canvas { context, size in
                 let scale = CGSize(
-                    width: imageSize.width / canvasSize.width,
-                    height: imageSize.height / canvasSize.height
+                    width: expandedSize.width / canvasSize.width,
+                    height: expandedSize.height / canvasSize.height
                 )
 
                 for annotation in viewModel.annotations {
@@ -138,8 +140,17 @@ struct AnnotationCanvas: View {
 
             if isEditing {
                 // 表示スケールを計算
-                let displayScale = canvasSize.height / imageSize.height
+                let displayScale = canvasSize.height / expandedSize.height
                 let scaledFontSize = viewModel.fontSize * displayScale
+                // 画像座標からの動的な表示位置（拡張に追従）
+                let scale = CGSize(
+                    width: expandedSize.width / canvasSize.width,
+                    height: expandedSize.height / canvasSize.height
+                )
+                let dynamicEditingPos = CGPoint(
+                    x: (editingImagePosition.x + viewModel.imageOffset.x) / scale.width,
+                    y: (editingImagePosition.y + viewModel.imageOffset.y) / scale.height
+                )
 
                 VStack {
                     HStack {
@@ -183,8 +194,8 @@ struct AnnotationCanvas: View {
                         )
                         Spacer()
                     }
-                    .padding(.leading, editingPosition.x)
-                    .padding(.top, editingPosition.y)
+                    .padding(.leading, dynamicEditingPos.x)
+                    .padding(.top, dynamicEditingPos.y)
                     Spacer()
                 }
             }
@@ -195,6 +206,14 @@ struct AnnotationCanvas: View {
                 if let window = NSApp.keyWindow {
                     window.makeFirstResponder(nil)
                 }
+            }
+        }
+        .onChange(of: displayText) { _, newText in
+            updateEditingTextBounds(text: newText)
+        }
+        .onChange(of: isEditing) { _, editing in
+            if !editing {
+                viewModel.editingTextBounds = nil
             }
         }
     }
@@ -211,17 +230,17 @@ struct AnnotationCanvas: View {
         }
 
         let scale = CGSize(
-            width: imageSize.width / canvasSize.width,
-            height: imageSize.height / canvasSize.height
+            width: expandedSize.width / canvasSize.width,
+            height: expandedSize.height / canvasSize.height
         )
 
         let scaledStart = CGPoint(
-            x: value.startLocation.x * scale.width,
-            y: value.startLocation.y * scale.height
+            x: value.startLocation.x * scale.width - imageOffset.x,
+            y: value.startLocation.y * scale.height - imageOffset.y
         )
         let scaledCurrent = CGPoint(
-            x: value.location.x * scale.width,
-            y: value.location.y * scale.height
+            x: value.location.x * scale.width - imageOffset.x,
+            y: value.location.y * scale.height - imageOffset.y
         )
 
         // ドラッグ開始時
@@ -310,13 +329,13 @@ struct AnnotationCanvas: View {
 
     private func handleDragEnd(_ value: DragGesture.Value) {
         let scale = CGSize(
-            width: imageSize.width / canvasSize.width,
-            height: imageSize.height / canvasSize.height
+            width: expandedSize.width / canvasSize.width,
+            height: expandedSize.height / canvasSize.height
         )
 
         let scaledEnd = CGPoint(
-            x: value.location.x * scale.width,
-            y: value.location.y * scale.height
+            x: value.location.x * scale.width - imageOffset.x,
+            y: value.location.y * scale.height - imageOffset.y
         )
 
         if let annotationId = pendingSelectAnnotationId {
@@ -333,7 +352,11 @@ struct AnnotationCanvas: View {
             isDraggingAnnotation = false
         } else if viewModel.selectedTool == .text {
             editingPosition = value.location
+            // 画像座標を固定保持（拡張によるoffset変動の影響を受けない）
+            editingImagePosition = scaledEnd
             isEditing = true
+            // 初期バウンズを設定（空テキスト）
+            updateEditingTextBounds(text: "")
         } else {
             viewModel.finishAnnotation(at: scaledEnd)
         }
@@ -341,12 +364,12 @@ struct AnnotationCanvas: View {
 
     private func hitTestResizeHandle(annotation: Annotation, point: CGPoint, scale: CGSize) -> ResizeHandle? {
         let displayStart = CGPoint(
-            x: annotation.startPoint.x / scale.width,
-            y: annotation.startPoint.y / scale.height
+            x: (annotation.startPoint.x + imageOffset.x) / scale.width,
+            y: (annotation.startPoint.y + imageOffset.y) / scale.height
         )
         let displayEnd = CGPoint(
-            x: annotation.endPoint.x / scale.width,
-            y: annotation.endPoint.y / scale.height
+            x: (annotation.endPoint.x + imageOffset.x) / scale.width,
+            y: (annotation.endPoint.y + imageOffset.y) / scale.height
         )
 
         let handleSize: CGFloat = 16  // ヒット判定用に大きめ
@@ -419,6 +442,17 @@ struct AnnotationCanvas: View {
         }
     }
 
+    private func updateEditingTextBounds(text: String) {
+        guard isEditing else { return }
+        // editingImagePosition は編集開始時に固定された画像座標を使う
+        // （拡張によるimageOffset変動の影響を受けない）
+        viewModel.editingTextBounds = Annotation.computeTextBounds(
+            text: text,
+            fontSize: viewModel.fontSize,
+            origin: editingImagePosition
+        )
+    }
+
     private func finishTextEditing() {
         // displayTextを使用（最新の入力内容）
         let finalText = displayText
@@ -438,22 +472,12 @@ struct AnnotationCanvas: View {
             return
         }
 
-        let scale = CGSize(
-            width: imageSize.width / canvasSize.width,
-            height: imageSize.height / canvasSize.height
-        )
-
-        let scaledPosition = CGPoint(
-            x: editingPosition.x * scale.width,
-            y: editingPosition.y * scale.height
-        )
-
         if let annotationId = editingAnnotationId {
             // 既存の注釈を更新
             viewModel.updateTextAnnotation(id: annotationId, text: finalText)
         } else {
-            // 新規作成
-            viewModel.addTextAnnotation(at: scaledPosition, text: finalText)
+            // 新規作成（editingImagePosition は編集開始時に固定された画像座標）
+            viewModel.addTextAnnotation(at: editingImagePosition, text: finalText)
         }
     }
 
@@ -461,19 +485,23 @@ struct AnnotationCanvas: View {
         guard annotation.type == .text, let text = annotation.text else { return }
 
         let scale = CGSize(
-            width: imageSize.width / canvasSize.width,
-            height: imageSize.height / canvasSize.height
+            width: expandedSize.width / canvasSize.width,
+            height: expandedSize.height / canvasSize.height
         )
 
-        // 画像座標系からキャンバス座標系に変換
+        // 画像座標系からキャンバス座標系に変換（imageOffset を加算）
         editingPosition = CGPoint(
-            x: annotation.endPoint.x / scale.width,
-            y: annotation.endPoint.y / scale.height
+            x: (annotation.endPoint.x + imageOffset.x) / scale.width,
+            y: (annotation.endPoint.y + imageOffset.y) / scale.height
         )
+        // 画像座標を固定保持
+        editingImagePosition = annotation.endPoint
         editingText = text
         displayText = text
         editingAnnotationId = annotation.id
         isEditing = true
+        // 編集中テキストのバウンズを設定
+        updateEditingTextBounds(text: text)
 
         // 編集中は選択解除
         viewModel.deselectAnnotation()
@@ -481,12 +509,12 @@ struct AnnotationCanvas: View {
 
     private func drawAnnotation(_ annotation: Annotation, context: inout GraphicsContext, scale: CGSize) {
         let displayStart = CGPoint(
-            x: annotation.startPoint.x / scale.width,
-            y: annotation.startPoint.y / scale.height
+            x: (annotation.startPoint.x + imageOffset.x) / scale.width,
+            y: (annotation.startPoint.y + imageOffset.y) / scale.height
         )
         let displayEnd = CGPoint(
-            x: annotation.endPoint.x / scale.width,
-            y: annotation.endPoint.y / scale.height
+            x: (annotation.endPoint.x + imageOffset.x) / scale.width,
+            y: (annotation.endPoint.y + imageOffset.y) / scale.height
         )
 
         switch annotation.type {
@@ -635,12 +663,12 @@ struct AnnotationCanvas: View {
 
     private func drawSelectionIndicator(for annotation: Annotation, context: inout GraphicsContext, scale: CGSize) {
         let displayStart = CGPoint(
-            x: annotation.startPoint.x / scale.width,
-            y: annotation.startPoint.y / scale.height
+            x: (annotation.startPoint.x + imageOffset.x) / scale.width,
+            y: (annotation.startPoint.y + imageOffset.y) / scale.height
         )
         let displayEnd = CGPoint(
-            x: annotation.endPoint.x / scale.width,
-            y: annotation.endPoint.y / scale.height
+            x: (annotation.endPoint.x + imageOffset.x) / scale.width,
+            y: (annotation.endPoint.y + imageOffset.y) / scale.height
         )
 
         let selectionRect: CGRect
@@ -707,10 +735,10 @@ struct AnnotationCanvas: View {
     }
 
     private func drawCropOverlay(cropRect: CGRect, context: inout GraphicsContext, scale: CGSize, canvasSize: CGSize) {
-        // 画像座標系からキャンバス座標系に変換
+        // 画像座標系からキャンバス座標系に変換（imageOffset を加算）
         let displayRect = CGRect(
-            x: cropRect.origin.x / scale.width,
-            y: cropRect.origin.y / scale.height,
+            x: (cropRect.origin.x + imageOffset.x) / scale.width,
+            y: (cropRect.origin.y + imageOffset.y) / scale.height,
             width: cropRect.width / scale.width,
             height: cropRect.height / scale.height
         )

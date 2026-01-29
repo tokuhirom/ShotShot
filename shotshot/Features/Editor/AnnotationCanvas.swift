@@ -94,6 +94,7 @@ struct AnnotationCanvas: View {
     @State private var dragStartPoint: CGPoint = .zero
     @State private var lastClickTime: Date = .distantPast
     @State private var lastClickPoint: CGPoint = .zero
+    @State private var pendingSelectAnnotationId: UUID? = nil  // 描画ツールでのクリック選択用
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -268,7 +269,22 @@ struct AnnotationCanvas: View {
                 // テキストツール: クリック位置でテキスト入力開始（handleDragEndで処理）
                 viewModel.deselectAnnotation()
             } else {
-                // 描画ツール: 新規注釈作成
+                // 描画ツール: 既存注釈のクリック選択 or 新規作成
+                if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
+                    // 既存注釈あり → クリックなら選択、ドラッグなら新規作成
+                    pendingSelectAnnotationId = hitAnnotation.id
+                } else {
+                    viewModel.deselectAnnotation()
+                    viewModel.startAnnotation(at: scaledStart)
+                }
+            }
+        }
+
+        // 描画ツールで既存注釈上からドラッグ開始した場合、一定距離以上で新規作成に切り替え
+        if let _ = pendingSelectAnnotationId {
+            let dragDistance = hypot(value.location.x - value.startLocation.x, value.location.y - value.startLocation.y)
+            if dragDistance > 5 {
+                pendingSelectAnnotationId = nil
                 viewModel.deselectAnnotation()
                 viewModel.startAnnotation(at: scaledStart)
             }
@@ -303,7 +319,12 @@ struct AnnotationCanvas: View {
             y: value.location.y * scale.height
         )
 
-        if isResizingAnnotation {
+        if let annotationId = pendingSelectAnnotationId {
+            // クリックで既存注釈を選択
+            pendingSelectAnnotationId = nil
+            viewModel.selectAnnotation(id: annotationId)
+            viewModel.selectedTool = .select
+        } else if isResizingAnnotation {
             // リサイズ完了
             isResizingAnnotation = false
             activeResizeHandle = nil

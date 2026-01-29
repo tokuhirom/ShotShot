@@ -22,6 +22,9 @@ final class SelectionOverlayWindow: NSWindow {
     private var globalEventMonitor: Any?
     private var notificationObserver: Any?
     private var isCleaned = false
+    private(set) var isCountdownMode = false
+    var onCountdownCancel: (() -> Void)?
+    private(set) var finalLocalSelectionRect: CGRect = .zero
 
     init(screen: NSScreen, onSelection: @escaping (CGRect) -> Void, onCancel: @escaping () -> Void) {
         self.screenFrame = screen.frame
@@ -84,7 +87,12 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     private func handleCancel() {
-        guard !isCleaned, let cancel = onCancel else { return }
+        guard !isCleaned else { return }
+        if isCountdownMode {
+            onCountdownCancel?()
+            return
+        }
+        guard let cancel = onCancel else { return }
         cancel()
     }
 
@@ -98,6 +106,7 @@ final class SelectionOverlayWindow: NSWindow {
         isCleaned = true
         onSelection = nil
         onCancel = nil
+        onCountdownCancel = nil
 
         // NotificationCenterオブザーバーを削除
         if let observer = notificationObserver {
@@ -207,7 +216,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseMoved(with event: NSEvent) {
-        guard !isDragging, !isCleaned else { return }
+        guard !isDragging, !isCleaned, !isCountdownMode else { return }
 
         let windowPoint = event.locationInWindow
         let screenPoint = convertToScreenCoordinates(windowPoint)
@@ -223,7 +232,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseDown(with event: NSEvent) {
-        guard !isCleaned else { return }
+        guard !isCleaned, !isCountdownMode else { return }
         NSLog("[SelectionOverlay] mouseDown at %@", "\(event.locationInWindow)")
         let point = event.locationInWindow
         startPoint = point
@@ -233,7 +242,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard !isCleaned else { return }
+        guard !isCleaned, !isCountdownMode else { return }
         guard let start = startPoint else { return }
         let current = event.locationInWindow
 
@@ -253,11 +262,12 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard !isCleaned else { return }
+        guard !isCleaned, !isCountdownMode else { return }
         NSLog("[SelectionOverlay] mouseUp - currentRect: %@, isDragging: %d", "\(currentRect)", isDragging ? 1 : 0)
 
         // ドラッグで選択した場合
         if isDragging && currentRect.width > 5 && currentRect.height > 5 {
+            finalLocalSelectionRect = currentRect
             let flippedRect = CGRect(
                 x: currentRect.origin.x,
                 y: screenFrame.height - currentRect.origin.y - currentRect.height,
@@ -272,6 +282,7 @@ final class SelectionOverlayWindow: NSWindow {
 
         // クリックでウィンドウを選択した場合
         if let windowRect = highlightedWindowRect {
+            finalLocalSelectionRect = windowRect
             let flippedRect = CGRect(
                 x: windowRect.origin.x,
                 y: screenFrame.height - windowRect.origin.y - windowRect.height,
@@ -291,6 +302,21 @@ final class SelectionOverlayWindow: NSWindow {
         isDragging = false
         overlayView?.selectionRect = .zero
     }
+
+    func enterCountdownMode() {
+        isCountdownMode = true
+        // 暗いオーバーレイを消してウィンドウ背景を透明にする
+        backgroundColor = .clear
+        // マウスイベントを無効化
+        ignoresMouseEvents = true
+        // ビューをカウントダウンモードにする
+        overlayView?.enterCountdownMode(selectionRect: finalLocalSelectionRect)
+        NSCursor.arrow.set()
+    }
+
+    func updateCountdown(_ number: Int) {
+        overlayView?.countdownNumber = number
+    }
 }
 
 final class SelectionOverlayView: NSView {
@@ -306,10 +332,29 @@ final class SelectionOverlayView: NSView {
         }
     }
 
+    private var isCountdownMode = false
+    private var countdownSelectionRect: CGRect = .zero
+    var countdownNumber: Int = 0 {
+        didSet {
+            needsDisplay = true
+        }
+    }
+
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    func enterCountdownMode(selectionRect: CGRect) {
+        isCountdownMode = true
+        countdownSelectionRect = selectionRect
+        needsDisplay = true
+    }
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
+
+        if isCountdownMode {
+            drawCountdownMode()
+            return
+        }
 
         NSColor.black.withAlphaComponent(0.3).setFill()
         bounds.fill()
@@ -356,5 +401,66 @@ final class SelectionOverlayView: NSView {
             )
             sizeText.draw(in: textRect, withAttributes: attributes)
         }
+    }
+
+    private func drawCountdownMode() {
+        // 透明背景（暗いオーバーレイなし）
+        NSColor.clear.setFill()
+        bounds.fill()
+
+        guard countdownSelectionRect.width > 0, countdownSelectionRect.height > 0 else { return }
+
+        // 青い点線枠
+        NSColor.systemBlue.setStroke()
+        let borderPath = NSBezierPath(rect: countdownSelectionRect)
+        borderPath.lineWidth = 2.0
+        let dashPattern: [CGFloat] = [6.0, 4.0]
+        borderPath.setLineDash(dashPattern, count: 2, phase: 0)
+        borderPath.stroke()
+
+        // カウントダウン数字
+        guard countdownNumber > 0 else { return }
+
+        let rect = countdownSelectionRect
+        let fontSize = min(120, min(rect.width, rect.height) * 0.6)
+
+        let text = "\(countdownNumber)"
+        let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.white,
+        ]
+        let textSize = text.size(withAttributes: attributes)
+
+        // 半透明黒丸背景
+        let circleRadius = max(textSize.width, textSize.height) * 0.8
+        let circleCenter = CGPoint(x: rect.midX, y: rect.midY)
+        let circleRect = CGRect(
+            x: circleCenter.x - circleRadius,
+            y: circleCenter.y - circleRadius,
+            width: circleRadius * 2,
+            height: circleRadius * 2
+        )
+        NSColor.black.withAlphaComponent(0.5).setFill()
+        let circlePath = NSBezierPath(ovalIn: circleRect)
+        circlePath.fill()
+
+        // 白文字 + 黒影
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.8)
+        shadow.shadowOffset = NSSize(width: 0, height: -2)
+        shadow.shadowBlurRadius = 4
+        let shadowAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.white,
+            .shadow: shadow,
+        ]
+        let textRect = CGRect(
+            x: rect.midX - textSize.width / 2,
+            y: rect.midY - textSize.height / 2,
+            width: textSize.width,
+            height: textSize.height
+        )
+        text.draw(in: textRect, withAttributes: shadowAttributes)
     }
 }

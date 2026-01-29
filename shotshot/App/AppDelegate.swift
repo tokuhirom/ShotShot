@@ -44,6 +44,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     await self?.startCapture()
                 }
             },
+            onTimerCapture: { [weak self] in
+                Task { @MainActor in
+                    await self?.startTimerCapture()
+                }
+            },
             onSettings: { [weak self] in
                 self?.openSettings()
             },
@@ -117,6 +122,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             showPermissionAlert()
         } catch {
             print("[shotshot] Capture error: \(error)")
+            showErrorAlert(error: error)
+        }
+    }
+
+    func startTimerCapture() async {
+        guard let captureManager = captureManager else {
+            print("[shotshot] captureManager is nil")
+            return
+        }
+
+        print("[shotshot] Starting timer capture...")
+        do {
+            let screenshot = try await captureManager.captureWithTimer(countdownSeconds: 3)
+            print("[shotshot] Timer capture completed, showing editor...")
+            showEditor(with: screenshot)
+        } catch CaptureError.cancelled {
+            print("[shotshot] Timer capture cancelled by user")
+        } catch CaptureError.permissionDenied {
+            print("[shotshot] Permission denied")
+            showPermissionAlert()
+        } catch {
+            print("[shotshot] Timer capture error: \(error)")
             showErrorAlert(error: error)
         }
     }

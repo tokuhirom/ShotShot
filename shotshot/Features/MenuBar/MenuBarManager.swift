@@ -5,11 +5,13 @@ import SwiftUI
 final class MenuBarManager {
     private var statusItem: NSStatusItem?
     private let onCapture: () -> Void
+    private let onTimerCapture: () -> Void
     private let onSettings: () -> Void
     private let onQuit: () -> Void
 
-    init(onCapture: @escaping () -> Void, onSettings: @escaping () -> Void, onQuit: @escaping () -> Void) {
+    init(onCapture: @escaping () -> Void, onTimerCapture: @escaping () -> Void, onSettings: @escaping () -> Void, onQuit: @escaping () -> Void) {
         self.onCapture = onCapture
+        self.onTimerCapture = onTimerCapture
         self.onSettings = onSettings
         self.onQuit = onQuit
         setupStatusItem()
@@ -30,6 +32,12 @@ final class MenuBarManager {
         captureItem.keyEquivalentModifierMask = [.control, .shift]
         captureItem.keyEquivalent = "4"
         menu.addItem(captureItem)
+
+        let timerCaptureItem = NSMenuItem(title: "タイマーで撮る (3秒)", action: #selector(timerCaptureAction), keyEquivalent: "")
+        timerCaptureItem.target = self
+        timerCaptureItem.keyEquivalentModifierMask = [.control, .shift]
+        timerCaptureItem.keyEquivalent = "5"
+        menu.addItem(timerCaptureItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -54,6 +62,10 @@ final class MenuBarManager {
 
     @objc private func captureAction() {
         onCapture()
+    }
+
+    @objc private func timerCaptureAction() {
+        onTimerCapture()
     }
 
     @objc private func openSaveFolderAction() {

@@ -285,8 +285,12 @@ struct AnnotationCanvas: View {
                     viewModel.startCrop(at: scaledStart)
                 }
             } else if viewModel.selectedTool == .text {
-                // テキストツール: クリック位置でテキスト入力開始（handleDragEndで処理）
-                viewModel.deselectAnnotation()
+                // テキストツール: 既存注釈のクリック選択 or 新規テキスト入力
+                if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
+                    pendingSelectAnnotationId = hitAnnotation.id
+                } else {
+                    viewModel.deselectAnnotation()
+                }
             } else {
                 // 描画ツール: 既存注釈のクリック選択 or 新規作成
                 if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
@@ -305,7 +309,10 @@ struct AnnotationCanvas: View {
             if dragDistance > 5 {
                 pendingSelectAnnotationId = nil
                 viewModel.deselectAnnotation()
-                viewModel.startAnnotation(at: scaledStart)
+                // テキストツールの場合は新規注釈作成しない（handleDragEndでテキスト入力開始）
+                if viewModel.selectedTool != .text {
+                    viewModel.startAnnotation(at: scaledStart)
+                }
             }
         }
 

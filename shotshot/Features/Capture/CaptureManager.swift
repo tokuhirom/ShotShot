@@ -35,6 +35,27 @@ final class CaptureManager {
     private var isCapturing = false
     private var countdownCancelled = false
 
+    func selectArea() async throws -> CaptureSelection {
+        guard !isCapturing else {
+            NSLog("[CaptureManager] Already capturing, ignoring request")
+            throw CaptureError.cancelled
+        }
+        isCapturing = true
+        defer {
+            isCapturing = false
+            closeOverlayWindows()
+        }
+
+        let hasPermission = await checkPermission()
+        guard hasPermission else {
+            throw CaptureError.permissionDenied
+        }
+
+        hasResumed = false
+        let selection = try await showSelectionOverlay()
+        return selection
+    }
+
     func captureInteractively() async throws -> Screenshot {
         // 重複実行を防止
         guard !isCapturing else {
@@ -42,7 +63,10 @@ final class CaptureManager {
             throw CaptureError.cancelled
         }
         isCapturing = true
-        defer { isCapturing = false }
+        defer {
+            isCapturing = false
+            closeOverlayWindows()
+        }
 
         print("[CaptureManager] Checking permission...")
         let hasPermission = await checkPermission()
@@ -55,8 +79,6 @@ final class CaptureManager {
         hasResumed = false
         let selection = try await showSelectionOverlay()
         print("[CaptureManager] Selection completed: \(selection)")
-
-        closeOverlayWindows()
 
         print("[CaptureManager] Capturing rect...")
         let screenshot = try await captureRect(selection)

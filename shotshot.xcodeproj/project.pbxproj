@@ -30,6 +30,10 @@
 		A1000001212E4B0000000020 /* ImageExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000020 /* ImageExporter.swift */; };
 		A1000001212E4B0000000021 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000021 /* HotkeyManager.swift */; };
 		A1000001212E4B0000000022 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000022 /* Assets.xcassets */; };
+		A1000001212E4B0000000030 /* RecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000030 /* RecordingManager.swift */; };
+		A1000001212E4B0000000031 /* RecordingStreamOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000031 /* RecordingStreamOutput.swift */; };
+		A1000001212E4B0000000032 /* RecordingIndicatorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000032 /* RecordingIndicatorWindow.swift */; };
+		A1000001212E4B0000000033 /* VideoExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000033 /* VideoExporter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +62,10 @@
 		A1000001212E4A0000000022 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000001212E4A0000000023 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000001212E4A0000000024 /* shotshot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = shotshot.entitlements; sourceTree = "<group>"; };
+		A1000001212E4A0000000030 /* RecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingManager.swift; sourceTree = "<group>"; };
+		A1000001212E4A0000000031 /* RecordingStreamOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingStreamOutput.swift; sourceTree = "<group>"; };
+		A1000001212E4A0000000032 /* RecordingIndicatorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIndicatorWindow.swift; sourceTree = "<group>"; };
+		A1000001212E4A0000000033 /* VideoExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExporter.swift; sourceTree = "<group>"; };
 		A1000001212E490000000001 /* shotshot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = shotshot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -116,9 +124,20 @@
 				A1000001212E47000000006 /* Editor */,
 				A1000001212E47000000007 /* Annotations */,
 				A1000001212E47000000008 /* MenuBar */,
+				A1000001212E470000000013 /* Recording */,
 				A1000001212E470000000012 /* Settings */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		A1000001212E470000000013 /* Recording */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001212E4A0000000030 /* RecordingManager.swift */,
+				A1000001212E4A0000000031 /* RecordingStreamOutput.swift */,
+				A1000001212E4A0000000032 /* RecordingIndicatorWindow.swift */,
+			);
+			path = Recording;
 			sourceTree = "<group>";
 		};
 		A1000001212E47000000005 /* Capture */ = {
@@ -186,6 +205,7 @@
 				A1000001212E4A0000000019 /* ClipboardService.swift */,
 				A1000001212E4A0000000020 /* ImageExporter.swift */,
 				A1000001212E4A0000000021 /* HotkeyManager.swift */,
+				A1000001212E4A0000000033 /* VideoExporter.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -292,6 +312,10 @@
 				A1000001212E4B0000000019 /* ClipboardService.swift in Sources */,
 				A1000001212E4B0000000020 /* ImageExporter.swift in Sources */,
 				A1000001212E4B0000000021 /* HotkeyManager.swift in Sources */,
+				A1000001212E4B0000000030 /* RecordingManager.swift in Sources */,
+				A1000001212E4B0000000031 /* RecordingStreamOutput.swift in Sources */,
+				A1000001212E4B0000000032 /* RecordingIndicatorWindow.swift in Sources */,
+				A1000001212E4B0000000033 /* VideoExporter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

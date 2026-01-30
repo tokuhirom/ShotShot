@@ -6,12 +6,24 @@ final class MenuBarManager {
     private var statusItem: NSStatusItem?
     private let onCapture: () -> Void
     private let onTimerCapture: () -> Void
+    private let onRecording: () -> Void
+    private let onStopRecording: () -> Void
     private let onSettings: () -> Void
     private let onQuit: () -> Void
+    private var recordMenuItem: NSMenuItem?
 
-    init(onCapture: @escaping () -> Void, onTimerCapture: @escaping () -> Void, onSettings: @escaping () -> Void, onQuit: @escaping () -> Void) {
+    init(
+        onCapture: @escaping () -> Void,
+        onTimerCapture: @escaping () -> Void,
+        onRecording: @escaping () -> Void,
+        onStopRecording: @escaping () -> Void,
+        onSettings: @escaping () -> Void,
+        onQuit: @escaping () -> Void
+    ) {
         self.onCapture = onCapture
         self.onTimerCapture = onTimerCapture
+        self.onRecording = onRecording
+        self.onStopRecording = onStopRecording
         self.onSettings = onSettings
         self.onQuit = onQuit
         setupStatusItem()
@@ -38,6 +50,13 @@ final class MenuBarManager {
         timerCaptureItem.keyEquivalentModifierMask = [.control, .shift]
         timerCaptureItem.keyEquivalent = "5"
         menu.addItem(timerCaptureItem)
+
+        let recordItem = NSMenuItem(title: "画面を録画する", action: #selector(recordAction), keyEquivalent: "")
+        recordItem.target = self
+        recordItem.keyEquivalentModifierMask = [.control, .shift]
+        recordItem.keyEquivalent = "6"
+        menu.addItem(recordItem)
+        self.recordMenuItem = recordItem
 
         menu.addItem(NSMenuItem.separator())
 
@@ -66,6 +85,22 @@ final class MenuBarManager {
 
     @objc private func timerCaptureAction() {
         onTimerCapture()
+    }
+
+    @objc private func recordAction() {
+        if recordMenuItem?.title == "録画を停止する" {
+            onStopRecording()
+        } else {
+            onRecording()
+        }
+    }
+
+    func updateRecordingState(isRecording: Bool) {
+        if isRecording {
+            recordMenuItem?.title = "録画を停止する"
+        } else {
+            recordMenuItem?.title = "画面を録画する"
+        }
     }
 
     @objc private func openSaveFolderAction() {

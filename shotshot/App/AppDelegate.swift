@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var menuBarManager: MenuBarManager?
     private var hotkeyManager: HotkeyManager?
     private var captureManager: CaptureManager?
+    private var recordingManager: RecordingManager?
     private var editorWindows: Set<NSWindow> = []
     private var settingsWindow: NSWindow?
     private var keyEventMonitor: Any?
@@ -15,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setupMenuBar()
         setupHotkey()
         setupCaptureManager()
+        setupRecordingManager()
         setupKeyEventMonitor()
         setupHotkeyChangeObserver()
     }
@@ -35,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if let monitor = keyEventMonitor {
             NSEvent.removeMonitor(monitor)
         }
+        recordingManager?.stopRecording()
     }
 
     private func setupMenuBar() {
@@ -48,6 +51,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 Task { @MainActor in
                     await self?.startTimerCapture()
                 }
+            },
+            onRecording: { [weak self] in
+                Task { @MainActor in
+                    await self?.startRecording()
+                }
+            },
+            onStopRecording: { [weak self] in
+                self?.recordingManager?.stopRecording()
             },
             onSettings: { [weak self] in
                 self?.openSettings()
@@ -70,6 +81,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func setupCaptureManager() {
         captureManager = CaptureManager()
+    }
+
+    private func setupRecordingManager() {
+        recordingManager = RecordingManager()
     }
 
     private func setupKeyEventMonitor() {
@@ -144,6 +159,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             showPermissionAlert()
         } catch {
             print("[shotshot] Timer capture error: \(error)")
+            showErrorAlert(error: error)
+        }
+    }
+
+    func startRecording() async {
+        guard let captureManager = captureManager, let recordingManager = recordingManager else {
+            print("[shotshot] captureManager or recordingManager is nil")
+            return
+        }
+
+        // 録画中なら停止
+        if recordingManager.isRecording {
+            recordingManager.stopRecording()
+            return
+        }
+
+        print("[shotshot] Starting recording...")
+        menuBarManager?.updateRecordingState(isRecording: true)
+
+        do {
+            let selection = try await captureManager.selectArea()
+            let tempURL = try await recordingManager.startRecording(selection: selection)
+            menuBarManager?.updateRecordingState(isRecording: false)
+            print("[shotshot] Recording stopped, showing save panel...")
+            await VideoExporter.showSavePanel(tempMP4URL: tempURL)
+        } catch CaptureError.cancelled {
+            print("[shotshot] Recording cancelled by user")
+            menuBarManager?.updateRecordingState(isRecording: false)
+        } catch CaptureError.permissionDenied {
+            print("[shotshot] Permission denied")
+            menuBarManager?.updateRecordingState(isRecording: false)
+            showPermissionAlert()
+        } catch {
+            print("[shotshot] Recording error: \(error)")
+            menuBarManager?.updateRecordingState(isRecording: false)
             showErrorAlert(error: error)
         }
     }

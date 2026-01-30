@@ -1,74 +1,80 @@
-# ShotShot - Claude Code 用プロジェクト情報
+# ShotShot - Project Info for Claude Code
 
-## ビルド & 実行
+All documentation, commit messages, and code comments must be written in English.
+
+## Build & Run
 
 ```bash
-# デバッグビルド
+# Debug build
 ./scripts/build.sh debug
 
-# リリースビルド
+# Release build
 ./scripts/build.sh release
 
-# 実行（ビルドがなければ自動ビルド、ログ出力付き）
+# Run (auto-builds if needed, with log output)
 ./scripts/run.sh
 ```
 
-## デバッグ
+## Debugging
 
-### クラッシュログの取得
+### Crash Logs
 
-macOSのクラッシュログは以下に保存される：
+macOS crash logs are saved at:
 ```bash
 ~/Library/Logs/DiagnosticReports/
 ```
 
-最新のShotShotクラッシュログを表示：
+Show the latest ShotShot crash log:
 ```bash
 cat ~/Library/Logs/DiagnosticReports/$(ls -t ~/Library/Logs/DiagnosticReports/ | grep -i shotshot | head -1)
 ```
 
-`./scripts/run.sh` で実行した場合、クラッシュ時に自動でログが表示される。
+When launched via `./scripts/run.sh`, crash logs are displayed automatically.
 
-### アプリログ
+### App Logs
 
-`./scripts/run.sh` で実行すると `./logs/` にログファイルが保存される。
+Running via `./scripts/run.sh` saves log files to `./logs/`.
 
-macOS GUIアプリでは `print()` が出力されない場合があるので、重要なログは `NSLog()` を使用する。
+`print()` may not produce output in macOS GUI apps. Use `NSLog()` for important logs.
 
-## 技術スタック
+## Tech Stack
 
 - Swift 6 (strict concurrency)
 - SwiftUI + AppKit
-- ScreenCaptureKit（画面キャプチャ）
-- macOS 26.0+
+- ScreenCaptureKit (screen capture & recording)
+- AVFoundation (video recording & export)
+- macOS 15.0+
 
-## アーキテクチャ
+## Architecture
 
 ```
 shotshot/
-├── App/           # エントリポイント、AppDelegate
+├── App/             # Entry point, AppDelegate
 ├── Features/
-│   ├── Capture/   # 画面キャプチャ、領域選択UI
-│   ├── Editor/    # 編集ウィンドウ
-│   ├── Annotations/ # 矢印、四角、テキスト、モザイク
-│   ├── MenuBar/   # メニューバー常駐
-│   └── Settings/  # 設定画面
-├── Models/        # データモデル
-├── Services/      # クリップボード、画像保存、ホットキー
-└── Resources/     # アセット、Info.plist
+│   ├── Capture/     # Screen capture, region selection UI
+│   ├── Editor/      # Editor window
+│   ├── Annotations/ # Arrow, rectangle, text, mosaic tools
+│   ├── MenuBar/     # Menu bar integration
+│   ├── Recording/   # Screen recording (SCStream + AVAssetWriter)
+│   └── Settings/    # Settings view
+├── Models/          # Data models
+├── Services/        # Clipboard, image export, video export, hotkey
+└── Resources/       # Assets, Info.plist
 ```
 
-## 注意点
+## Notes
 
-- `@MainActor` を多用している。Swift 6 の並行処理制限に注意。
-- NSWindowは `isReleasedWhenClosed = false` にしてARC管理にしている。
-- NotificationCenterのクロージャベースのオブザーバーは戻り値のトークンを保存して削除すること。
+- `@MainActor` is used extensively. Be careful with Swift 6 concurrency restrictions.
+- NSWindow uses `isReleasedWhenClosed = false` for ARC-based lifecycle management.
+- NotificationCenter closure-based observers must have their tokens stored and removed.
+- Do not subclass NSWindow with custom designated initializers (use composition instead).
+- `closeOverlayWindows()` must always be called via `defer` to prevent overlay windows from getting stuck on cancel.
 
 ## Tasks
 
- - [x] Crop 機能｡Crop ボタンを押すと､画像の範囲をえらんで､その範囲以外の部分の画像はない物になる｡
- - [x] ドロップダウンメニューの色選択のところに色が実際に表示されていること｡
- - [ ] Cmd-S で画像を名前をつけて保存できること｡
- - [x] Cmd-v でクリップボードから画像を取得し､それを編集したい
- - [x] Cmd-c でクリップボードにコピー
- - [x] 画像選択と矢印のアイコンが似すぎててよくわからん｡もう少しわかりやすく｡
+ - [x] Crop feature
+ - [x] Color display in dropdown menu color picker
+ - [ ] Cmd-S to save image with name
+ - [x] Cmd-V to open image from clipboard for editing
+ - [x] Cmd-C to copy to clipboard
+ - [x] Make select and arrow icons more distinguishable

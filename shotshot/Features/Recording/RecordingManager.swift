@@ -68,12 +68,11 @@ final class RecordingManager: NSObject {
         let tempURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("mp4")
         self.tempFileURL = tempURL
 
-        // AVAssetWriter の構成
+        // AVAssetWriter configuration (use logical size, not physical pixels)
         let writer = try AVAssetWriter(outputURL: tempURL, fileType: .mp4)
 
-        let scaleFactor = Int(selection.scaleFactor)
-        let videoWidth = Int(selection.rect.width) * scaleFactor
-        let videoHeight = Int(selection.rect.height) * scaleFactor
+        let videoWidth = Int(selection.rect.width)
+        let videoHeight = Int(selection.rect.height)
 
         let videoSettings: [String: Any] = [
             AVVideoCodecKey: AVVideoCodecType.h264,

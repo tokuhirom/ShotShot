@@ -46,16 +46,16 @@ final class SelectionOverlayWindow: NSWindow {
         self.acceptsMouseMovedEvents = true
         self.hasShadow = false
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        self.isReleasedWhenClosed = false  // ARC管理のため手動解放を防ぐ
+        self.isReleasedWhenClosed = false  // Keep under ARC to prevent manual release
 
         let view = SelectionOverlayView(frame: screen.frame)
         self.overlayView = view
         self.contentView = view
 
-        // ウィンドウ一覧を取得
+        // Load window list
         loadWindowList()
 
-        // Escapeキー用のローカルイベントモニター
+        // Local event monitor for Escape key
         localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { // Escape
                 self?.handleCancel()
@@ -64,14 +64,14 @@ final class SelectionOverlayWindow: NSWindow {
             return event
         }
 
-        // グローバルイベントモニター（アプリがアクティブでないときも検出）
+        // Global event monitor (captures even when app is inactive)
         globalEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { // Escape
                 self?.handleCancel()
             }
         }
 
-        // キーウィンドウでなくなったときに再アクティブ化
+        // Reactivate when it is no longer key window
         notificationObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification,
             object: self,
@@ -103,19 +103,19 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     func cleanup() {
-        guard !isCleaned else { return }  // 二重クリーンアップを防止
+        guard !isCleaned else { return }  // Prevent double cleanup
         isCleaned = true
         onSelection = nil
         onCancel = nil
         onCountdownCancel = nil
 
-        // NotificationCenterオブザーバーを削除
+        // Remove NotificationCenter observer
         if let observer = notificationObserver {
             NotificationCenter.default.removeObserver(observer)
             notificationObserver = nil
         }
 
-        // イベントモニターを削除
+        // Remove event monitors
         if let monitor = localEventMonitor {
             NSEvent.removeMonitor(monitor)
             localEventMonitor = nil
@@ -125,7 +125,7 @@ final class SelectionOverlayWindow: NSWindow {
             globalEventMonitor = nil
         }
 
-        // ビューをクリーンアップ
+        // Clean up the view
         overlayView = nil
         contentView = nil
     }
@@ -139,7 +139,7 @@ final class SelectionOverlayWindow: NSWindow {
             return
         }
 
-        // 全画面のサイズを取得（これより大きいウィンドウは除外）
+        // Get full screen size (exclude windows larger than this)
         let mainScreenFrame = NSScreen.main?.frame ?? screenFrame
 
         windowsUnderCursor = windowList.compactMap { info -> WindowInfo? in
@@ -153,12 +153,12 @@ final class SelectionOverlayWindow: NSWindow {
                 return nil
             }
 
-            // オーバーレイウィンドウ自身は除外
+            // Exclude the overlay window itself
             if windowID == CGWindowID(windowNumber) {
                 return nil
             }
 
-            // ウィンドウレイヤーをチェック（通常のウィンドウは0）
+            // Check window layer (normal windows are 0)
             let layer = info[kCGWindowLayer as String] as? Int ?? 0
             if layer < 0 || layer > 100 {
                 return nil
@@ -166,7 +166,7 @@ final class SelectionOverlayWindow: NSWindow {
 
             let frame = CGRect(x: x, y: y, width: width, height: height)
 
-            // 画面全体とほぼ同じサイズのウィンドウは除外（デスクトップ、Dockなど）
+            // Exclude windows roughly the size of the screen (desktop, Dock, etc.)
             if width >= mainScreenFrame.width * 0.95 && height >= mainScreenFrame.height * 0.9 {
                 return nil
             }
@@ -174,7 +174,7 @@ final class SelectionOverlayWindow: NSWindow {
             let name = info[kCGWindowName as String] as? String
             let ownerName = info[kCGWindowOwnerName as String] as? String
 
-            // Dock, WindowServer, Finder のデスクトップは除外
+            // Exclude Dock, WindowServer, and Finder desktop windows
             if ownerName == "Dock" || ownerName == "WindowServer" {
                 return nil
             }
@@ -187,7 +187,7 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     private func findWindowAt(screenPoint: CGPoint) -> WindowInfo? {
-        // スクリーン座標系でウィンドウを検索（上が0）
+        // Search windows in screen coordinates (top is 0)
         for window in windowsUnderCursor {
             if window.frame.contains(screenPoint) {
                 return window
@@ -197,14 +197,14 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     private func convertToScreenCoordinates(_ windowPoint: CGPoint) -> CGPoint {
-        // ウィンドウ座標（左下原点）をスクリーン座標（左上原点）に変換
+        // Convert window coordinates (bottom-left origin) to screen coordinates (top-left origin)
         let screenY = screenFrame.height - windowPoint.y + screenFrame.origin.y
         let screenX = windowPoint.x + screenFrame.origin.x
         return CGPoint(x: screenX, y: screenY)
     }
 
     private func convertWindowFrameToLocal(_ windowFrame: CGRect) -> CGRect {
-        // CGWindowの座標系（スクリーン左上原点）をNSView座標系（左下原点）に変換
+        // Convert CGWindow coordinates (screen top-left origin) to NSView coordinates (bottom-left origin)
         let localX = windowFrame.origin.x - screenFrame.origin.x
         let localY = screenFrame.height - (windowFrame.origin.y - screenFrame.origin.y) - windowFrame.height
         return CGRect(x: localX, y: localY, width: windowFrame.width, height: windowFrame.height)
@@ -252,7 +252,7 @@ final class SelectionOverlayWindow: NSWindow {
         let width = abs(current.x - start.x)
         let height = abs(current.y - start.y)
 
-        // ドラッグ開始とみなす閾値
+        // Threshold to treat as drag start
         if width > 5 || height > 5 {
             isDragging = true
             overlayView?.highlightRect = nil
@@ -266,7 +266,7 @@ final class SelectionOverlayWindow: NSWindow {
         guard !isCleaned, !isCountdownMode else { return }
         NSLog("[SelectionOverlay] mouseUp - currentRect: %@, isDragging: %d", "\(currentRect)", isDragging ? 1 : 0)
 
-        // ドラッグで選択した場合
+        // Selection by dragging
         if isDragging && currentRect.width > 5 && currentRect.height > 5 {
             finalLocalSelectionRect = currentRect
             let flippedRect = CGRect(
@@ -281,7 +281,7 @@ final class SelectionOverlayWindow: NSWindow {
             return
         }
 
-        // クリックでウィンドウを選択した場合
+        // Selection by clicking a window
         if let windowRect = highlightedWindowRect {
             finalLocalSelectionRect = windowRect
             let flippedRect = CGRect(
@@ -296,7 +296,7 @@ final class SelectionOverlayWindow: NSWindow {
             return
         }
 
-        // 何も選択されていない場合はリセット
+        // Reset when nothing is selected
         NSLog("[SelectionOverlay] No selection, resetting")
         startPoint = nil
         currentRect = .zero
@@ -306,11 +306,11 @@ final class SelectionOverlayWindow: NSWindow {
 
     func enterCountdownMode() {
         isCountdownMode = true
-        // 暗いオーバーレイを消してウィンドウ背景を透明にする
+        // Remove dark overlay and make background transparent
         backgroundColor = .clear
-        // マウスイベントを無効化
+        // Disable mouse events
         ignoresMouseEvents = true
-        // ビューをカウントダウンモードにする
+        // Put the view into countdown mode
         overlayView?.enterCountdownMode(selectionRect: finalLocalSelectionRect)
         NSCursor.arrow.set()
     }
@@ -360,7 +360,7 @@ final class SelectionOverlayView: NSView {
         NSColor.black.withAlphaComponent(0.3).setFill()
         bounds.fill()
 
-        // ウィンドウハイライト表示
+        // Window highlight display
         if let highlight = highlightRect, selectionRect.width <= 5 && selectionRect.height <= 5 {
             NSGraphicsContext.current?.compositingOperation = .clear
             NSColor.clear.setFill()
@@ -374,7 +374,7 @@ final class SelectionOverlayView: NSView {
             borderPath.stroke()
         }
 
-        // ドラッグ選択表示
+        // Drag selection display
         if selectionRect.width > 0 && selectionRect.height > 0 {
             NSGraphicsContext.current?.compositingOperation = .clear
             NSColor.clear.setFill()
@@ -405,13 +405,13 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawCountdownMode() {
-        // 透明背景（暗いオーバーレイなし）
+        // Transparent background (no dark overlay)
         NSColor.clear.setFill()
         bounds.fill()
 
         guard countdownSelectionRect.width > 0, countdownSelectionRect.height > 0 else { return }
 
-        // 青い点線枠
+        // Blue dashed border
         NSColor.systemBlue.setStroke()
         let borderPath = NSBezierPath(rect: countdownSelectionRect)
         borderPath.lineWidth = 2.0
@@ -419,7 +419,7 @@ final class SelectionOverlayView: NSView {
         borderPath.setLineDash(dashPattern, count: 2, phase: 0)
         borderPath.stroke()
 
-        // カウントダウン数字
+        // Countdown number
         guard countdownNumber > 0 else { return }
 
         let rect = countdownSelectionRect
@@ -433,7 +433,7 @@ final class SelectionOverlayView: NSView {
         ]
         let textSize = text.size(withAttributes: attributes)
 
-        // 半透明黒丸背景
+        // Semi-transparent black circular background
         let circleRadius = max(textSize.width, textSize.height) * 0.8
         let circleCenter = CGPoint(x: rect.midX, y: rect.midY)
         let circleRect = CGRect(
@@ -446,7 +446,7 @@ final class SelectionOverlayView: NSView {
         let circlePath = NSBezierPath(ovalIn: circleRect)
         circlePath.fill()
 
-        // 白文字 + 黒影
+        // White text with black shadow
         let shadow = NSShadow()
         shadow.shadowColor = NSColor.black.withAlphaComponent(0.8)
         shadow.shadowOffset = NSSize(width: 0, height: -2)

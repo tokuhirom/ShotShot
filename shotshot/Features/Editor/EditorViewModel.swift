@@ -31,13 +31,13 @@ final class EditorViewModel {
     private var undoStack: [[Annotation]] = []
     private var redoStack: [[Annotation]] = []
 
-    // 選択状態
+    // Selection state
     var selectedAnnotationId: UUID? = nil
 
-    // クロップ状態（画像座標系で保持）
+    // Crop state (kept in image coordinates)
     var cropRect: CGRect? = nil
 
-    // 編集中テキストのバウンズ（画像座標系）- キャンバス拡張用
+    // Editing text bounds (image coordinates) - for canvas expansion
     var editingTextBounds: CGRect? = nil
 
     var selectedColorBinding: Color {
@@ -50,10 +50,10 @@ final class EditorViewModel {
 
     private var currentAnnotation: Annotation?
 
-    /// キャンバス拡張時の余白（画像座標系でのピクセル数）
+    /// Padding for canvas expansion (pixels in image coordinate space).
     private let expandPadding: CGFloat = 12
 
-    /// 全注釈と元画像を包含する拡張バウンディングボックス（画像座標系）
+    /// Expanded bounding box that includes all annotations and the base image (image coordinates).
     var expandedBounds: CGRect {
         let imageRect = CGRect(origin: .zero, size: screenshot.image.size)
         var bounds = imageRect
@@ -63,31 +63,31 @@ final class EditorViewModel {
         if let current = currentAnnotation {
             bounds = bounds.union(current.bounds())
         }
-        // 編集中テキストのバウンズも含める
+        // Include editing text bounds
         if let textBounds = editingTextBounds {
             bounds = bounds.union(textBounds)
         }
-        // 拡張が必要な場合のみパディングを追加
+        // Add padding only when expansion is needed
         if bounds != imageRect {
             bounds = bounds.insetBy(dx: -expandPadding, dy: -expandPadding)
-            // パディングで元画像領域を超えた分のみ反映（元画像内にはパディング不要）
+            // Apply padding only where it exceeds the original image area
             bounds = bounds.union(imageRect)
         }
         return bounds
     }
 
-    /// 拡張キャンバスの原点から元画像原点までのオフセット
+    /// Offset from expanded canvas origin to original image origin.
     var imageOffset: CGPoint {
         let eb = expandedBounds
         return CGPoint(x: -eb.origin.x, y: -eb.origin.y)
     }
 
-    /// 拡張後の画像サイズ（画像座標系）
+    /// Image size after expansion (image coordinates).
     var expandedImageSize: CGSize {
         return expandedBounds.size
     }
 
-    /// キャンバス拡張が必要かどうか
+    /// Whether canvas expansion is needed.
     var needsExpansion: Bool {
         let imageRect = CGRect(origin: .zero, size: screenshot.image.size)
         return expandedBounds != imageRect
@@ -95,7 +95,7 @@ final class EditorViewModel {
 
     init(screenshot: Screenshot) {
         self.screenshot = screenshot
-        // AppSettingsから前回の設定を読み込み
+        // Load previous settings from AppSettings
         let settings = AppSettings.shared
         self.selectedTool = ToolType.from(name: settings.selectedToolName)
         self.selectedColor = settings.selectedColor
@@ -113,7 +113,7 @@ final class EditorViewModel {
     }
 
     var compositeImage: NSImage {
-        // モザイク注釈がある場合は、ベース画像にモザイクを適用
+        // Apply mosaic to base image if mosaic annotations exist
         let mosaicAnnotations = annotations.filter { $0.type == .mosaic }
         guard !mosaicAnnotations.isEmpty, let cgImage = screenshot.cgImage else {
             return screenshot.image
@@ -137,7 +137,7 @@ final class EditorViewModel {
 
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
 
-        // モザイク注釈のみ適用（スケールファクター考慮）
+        // Apply only mosaic annotations (consider scale factor)
         let scaleFactor = screenshot.scaleFactor
         for annotation in mosaicAnnotations {
             MosaicTool.draw(annotation, in: context, imageSize: CGSize(width: width, height: height), scaleFactor: scaleFactor)
@@ -154,9 +154,9 @@ final class EditorViewModel {
         let annotationType: AnnotationType
         switch selectedTool {
         case .select:
-            return  // 選択ツールでは新規注釈を作成しない
+            return  // Do not create new annotation with select tool
         case .crop:
-            return  // クロップはAnnotationCanvasで別途処理
+            return  // Crop is handled separately in AnnotationCanvas
         case .arrow:
             annotationType = .arrow
         case .rectangle:
@@ -227,7 +227,7 @@ final class EditorViewModel {
         }
     }
 
-    // MARK: - クロップ
+    // MARK: - Crop
 
     func startCrop(at point: CGPoint) {
         cropRect = CGRect(origin: point, size: .zero)
@@ -260,7 +260,7 @@ final class EditorViewModel {
 
         let scale = screenshot.scaleFactor
 
-        // 画像座標系に変換（Y軸反転）
+        // Convert to image coordinates (invert Y axis)
         let imageHeight = CGFloat(cgImage.height)
         let cropX = rect.origin.x * scale
         let cropY = imageHeight - (rect.origin.y + rect.height) * scale
@@ -274,7 +274,7 @@ final class EditorViewModel {
             return
         }
 
-        // 新しいスクリーンショットを作成
+        // Create a new screenshot
         let newSize = NSSize(width: rect.width, height: rect.height)
         let newImage = NSImage(cgImage: croppedCGImage, size: newSize)
 
@@ -284,7 +284,7 @@ final class EditorViewModel {
             scaleFactor: screenshot.scaleFactor
         )
 
-        // 注釈の座標を調整（クロップ領域の原点を基準に）
+        // Adjust annotation coordinates (relative to crop origin)
         let offsetX = rect.origin.x
         let offsetY = rect.origin.y
         annotations = annotations.compactMap { annotation in
@@ -297,7 +297,7 @@ final class EditorViewModel {
                 x: annotation.endPoint.x - offsetX,
                 y: annotation.endPoint.y - offsetY
             )
-            // クロップ領域外の注釈は除外
+            // Exclude annotations outside the crop area
             let bounds = CGRect(origin: .zero, size: newSize)
             if bounds.contains(newAnnotation.startPoint) || bounds.contains(newAnnotation.endPoint) {
                 return newAnnotation
@@ -305,7 +305,7 @@ final class EditorViewModel {
             return nil
         }
 
-        // Undo履歴をクリア（クロップ後は戻せない）
+        // Clear undo history (cannot undo after crop)
         undoStack.removeAll()
         redoStack.removeAll()
 
@@ -337,10 +337,10 @@ final class EditorViewModel {
         statusMessage = "操作をやり直しました"
     }
 
-    // MARK: - 選択・移動
+    // MARK: - Selection & Move
 
     func hitTest(at point: CGPoint) -> Annotation? {
-        // 後から追加された注釈が上にあるので逆順でチェック
+        // Check in reverse because newer annotations are on top
         for annotation in annotations.reversed() {
             if annotationContainsPoint(annotation, point) {
                 return annotation
@@ -381,17 +381,17 @@ final class EditorViewModel {
 
         switch handle {
         case .startPoint:
-            // startPoint を動かす
+            // Move startPoint
             annotation.startPoint = point
         case .endPoint:
-            // endPoint を動かす
+            // Move endPoint
             annotation.endPoint = point
         case .startXEndY:
-            // startPoint.x と endPoint.y を動かす
+            // Move startPoint.x and endPoint.y
             annotation.startPoint.x = point.x
             annotation.endPoint.y = point.y
         case .endXStartY:
-            // endPoint.x と startPoint.y を動かす
+            // Move endPoint.x and startPoint.y
             annotation.endPoint.x = point.x
             annotation.startPoint.y = point.y
         }
@@ -423,7 +423,7 @@ final class EditorViewModel {
     }
 
     private func arrowContainsPoint(_ annotation: Annotation, _ point: CGPoint) -> Bool {
-        // 矢印の線分からの距離で判定
+        // Determine by distance to the arrow segment
         let tolerance: CGFloat = 15.0
 
         let start = annotation.startPoint
@@ -432,7 +432,7 @@ final class EditorViewModel {
         let lineLength = hypot(end.x - start.x, end.y - start.y)
         guard lineLength > 0 else { return false }
 
-        // 点と線分の距離を計算
+        // Compute distance between point and line segment
         let t = max(0, min(1, ((point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y)) / (lineLength * lineLength)))
         let nearestX = start.x + t * (end.x - start.x)
         let nearestY = start.y + t * (end.y - start.y)
@@ -448,7 +448,7 @@ final class EditorViewModel {
             width: abs(annotation.endPoint.x - annotation.startPoint.x),
             height: abs(annotation.endPoint.y - annotation.startPoint.y)
         )
-        // 境界線付近も含める
+        // Include the area near the border
         let expandedRect = rect.insetBy(dx: -10, dy: -10)
         return expandedRect.contains(point)
     }
@@ -533,7 +533,7 @@ final class EditorViewModel {
 
         let colorSpace = CGColorSpaceCreateDeviceRGB()
 
-        // 拡張不要の場合は従来通り
+        // Keep existing behavior when no expansion is needed
         let isExpanded = offset.x != 0 || offset.y != 0
             || expandedPixelWidth != origPixelWidth
             || expandedPixelHeight != origPixelHeight
@@ -570,7 +570,7 @@ final class EditorViewModel {
             return NSImage(cgImage: finalCGImage, size: screenshot.image.size)
         }
 
-        // 拡張キャンバスで描画
+        // Draw on expanded canvas
         guard let context = CGContext(
             data: nil,
             width: expandedPixelWidth,
@@ -583,18 +583,18 @@ final class EditorViewModel {
             return screenshot.image
         }
 
-        // 白背景で塗りつぶし
+        // Fill with white background
         context.setFillColor(CGColor.white)
         context.fill(CGRect(x: 0, y: 0, width: expandedPixelWidth, height: expandedPixelHeight))
 
-        // 元画像を offset 位置に描画（CGContext は Y 反転: 左下原点）
+        // Draw base image at offset (CGContext is Y-flipped: bottom-left origin)
         let imgX = offset.x * scaleFactor
         let imgY = CGFloat(expandedPixelHeight) - offset.y * scaleFactor - CGFloat(origPixelHeight)
         context.draw(cgImage, in: CGRect(x: imgX, y: imgY,
                                           width: CGFloat(origPixelWidth),
                                           height: CGFloat(origPixelHeight)))
 
-        // 注釈を offset 補正して描画
+        // Draw annotations with offset adjustment
         let expandedImageSize = CGSize(width: expandedPixelWidth, height: expandedPixelHeight)
 
         let nsContext = NSGraphicsContext(cgContext: context, flipped: false)

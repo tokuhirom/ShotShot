@@ -15,7 +15,7 @@ final class AppSettings {
         static let hotkeyKeyCode = "hotkeyKeyCode"
         static let copyToClipboard = "copyToClipboard"
         static let defaultAnnotationColor = "defaultAnnotationColor"
-        // エディタ設定
+        // Editor settings
         static let selectedTool = "selectedTool"
         static let selectedColorRed = "selectedColorRed"
         static let selectedColorGreen = "selectedColorGreen"
@@ -27,7 +27,7 @@ final class AppSettings {
         static let mosaicType = "mosaicType"
     }
 
-    // デフォルト値
+    // Default values
     private static let defaultSkitchPink = NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0)
 
     var savePath: String = "" {
@@ -46,7 +46,7 @@ final class AppSettings {
         didSet { defaults.set(copyToClipboard, forKey: Keys.copyToClipboard) }
     }
 
-    // MARK: - エディタ設定
+    // MARK: - Editor Settings
 
     var selectedToolName: String = "select" {
         didSet { defaults.set(selectedToolName, forKey: Keys.selectedTool) }
@@ -82,7 +82,7 @@ final class AppSettings {
         let appSupportPath = NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true).first ?? "~/Library/Application Support"
         let defaultSavePath = (appSupportPath as NSString).appendingPathComponent("ShotShot/Screenshots")
 
-        // 既存設定の読み込み（初期値を先に設定してからdidSetが走らないように直接代入）
+        // Load existing settings (assign directly to avoid didSet until initial values are set)
         let storedSavePath = defaults.string(forKey: Keys.savePath) ?? defaultSavePath
         let storedModifiers = UInt32(defaults.integer(forKey: Keys.hotkeyModifiers))
         let storedKeyCode = UInt32(defaults.integer(forKey: Keys.hotkeyKeyCode))
@@ -93,10 +93,10 @@ final class AppSettings {
         self.hotkeyKeyCode = storedKeyCode != 0 ? storedKeyCode : 21  // "4" key
         self.copyToClipboard = storedClipboard
 
-        // エディタ設定の読み込み
+        // Load editor settings
         self.selectedToolName = defaults.string(forKey: Keys.selectedTool) ?? "select"
 
-        // 色の読み込み（デフォルト: Skitch Pink）
+        // Load color (default: Skitch Pink)
         if defaults.object(forKey: Keys.selectedColorRed) != nil {
             let red = CGFloat(defaults.double(forKey: Keys.selectedColorRed))
             let green = CGFloat(defaults.double(forKey: Keys.selectedColorGreen))
@@ -107,22 +107,22 @@ final class AppSettings {
             self.selectedColor = Self.defaultSkitchPink
         }
 
-        // 線幅の読み込み（デフォルト: 3.0）
+        // Load line width (default: 3.0)
         let storedLineWidth = defaults.double(forKey: Keys.lineWidth)
         self.lineWidth = storedLineWidth > 0 ? storedLineWidth : 3.0
 
-        // フォントサイズの読み込み（デフォルト: 32.0）
+        // Load font size (default: 32.0)
         let storedFontSize = defaults.double(forKey: Keys.fontSize)
         self.fontSize = storedFontSize > 0 ? storedFontSize : 32.0
 
-        // 角丸設定の読み込み（デフォルト: true）
+        // Load rounded-corner setting (default: true)
         if defaults.object(forKey: Keys.useRoundedCorners) != nil {
             self.useRoundedCorners = defaults.bool(forKey: Keys.useRoundedCorners)
         } else {
             self.useRoundedCorners = true
         }
 
-        // モザイクタイプの読み込み（デフォルト: pixelateFine）
+        // Load mosaic type (default: pixelateFine)
         if let storedMosaicType = defaults.string(forKey: Keys.mosaicType),
            let mosaicType = MosaicType(rawValue: storedMosaicType) {
             self.mosaicType = mosaicType

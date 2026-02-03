@@ -66,7 +66,7 @@ struct Annotation: Identifiable, Sendable {
         self.mosaicType = mosaicType
     }
 
-    /// 注釈のバウンディングボックスを返す（画像座標系）
+    /// Returns the annotation bounding box (image coordinate space).
     func bounds() -> CGRect {
         switch type {
         case .arrow:
@@ -97,7 +97,7 @@ struct Annotation: Identifiable, Sendable {
         }
     }
 
-    /// テキスト注釈の境界矩形を計算（画像座標系）
+    /// Computes the bounding rectangle for a text annotation (image coordinate space).
     func textBounds() -> CGRect? {
         guard type == .text, let text = text, !text.isEmpty else { return nil }
         let fontSize = self.fontSize ?? 16.0
@@ -115,7 +115,7 @@ struct Annotation: Identifiable, Sendable {
         )
     }
 
-    /// 任意のテキストとフォントサイズで境界矩形を計算するスタティックメソッド
+    /// Static helper to compute the bounding rectangle for arbitrary text and font size.
     static func computeTextBounds(text: String, fontSize: CGFloat, origin: CGPoint) -> CGRect {
         guard !text.isEmpty else {
             return CGRect(origin: origin, size: CGSize(width: 50, height: fontSize * 1.2))

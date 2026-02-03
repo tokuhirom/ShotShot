@@ -57,7 +57,7 @@ final class CaptureManager {
     }
 
     func captureInteractively() async throws -> Screenshot {
-        // 重複実行を防止
+        // Prevent duplicate execution
         guard !isCapturing else {
             NSLog("[CaptureManager] Already capturing, ignoring request")
             throw CaptureError.cancelled
@@ -109,16 +109,16 @@ final class CaptureManager {
         let selection = try await showSelectionOverlay()
         print("[CaptureManager] Timer capture: selection completed: \(selection)")
 
-        // カウントダウンモードに移行
+        // Switch to countdown mode
         transitionToCountdownMode()
 
-        // カウントダウン実行
+        // Run countdown
         try await runCountdown(seconds: countdownSeconds)
 
-        // オーバーレイを閉じる
+        // Close the overlay
         closeOverlayWindows()
 
-        // 画面描画待ち
+        // Wait for screen redraw
         try await Task.sleep(nanoseconds: 150_000_000)
 
         print("[CaptureManager] Timer capture: capturing rect...")
@@ -145,14 +145,14 @@ final class CaptureManager {
                 throw CaptureError.cancelled
             }
 
-            // カウントダウン数字を更新
+            // Update countdown number
             for window in overlayWindows {
                 if let overlay = window as? SelectionOverlayWindow {
                     overlay.updateCountdown(i)
                 }
             }
 
-            // 1秒を100ms刻みで待機し、キャンセルチェック
+            // Wait 1 second in 100ms steps and check for cancel
             for _ in 0..<10 {
                 guard !countdownCancelled else {
                     throw CaptureError.cancelled
@@ -161,7 +161,7 @@ final class CaptureManager {
             }
         }
 
-        // 最後のキャンセルチェック
+        // Final cancel check
         guard !countdownCancelled else {
             throw CaptureError.cancelled
         }
@@ -222,7 +222,7 @@ final class CaptureManager {
 
             self.overlayWindows = windows
 
-            // アプリをアクティブにしてマウスイベントを受け取れるようにする
+            // Activate the app to receive mouse events
             NSApp.activate(ignoringOtherApps: true)
         }
     }

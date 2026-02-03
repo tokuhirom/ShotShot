@@ -52,7 +52,7 @@ final class RecordingIndicatorWindow {
             self?.onStop?()
         }
 
-        // Escape キーで停止
+        // Stop with Escape key
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { // Escape
                 self?.onStop?()
@@ -120,7 +120,7 @@ final class RecordingIndicatorView: NSView {
         self.badgeGap = badgeGap
         self.padding = padding
 
-        // REC ラベル
+        // REC label
         recLabel = NSTextField(labelWithString: "● REC")
         recLabel.font = NSFont.boldSystemFont(ofSize: 13)
         recLabel.textColor = .white
@@ -128,7 +128,7 @@ final class RecordingIndicatorView: NSView {
         recLabel.isBezeled = false
         recLabel.isEditable = false
 
-        // 時間ラベル
+        // Time label
         timeLabel = NSTextField(labelWithString: "0:00")
         timeLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)
         timeLabel.textColor = .white
@@ -136,7 +136,7 @@ final class RecordingIndicatorView: NSView {
         timeLabel.isBezeled = false
         timeLabel.isEditable = false
 
-        // 停止ボタン
+        // Stop button
         stopButton = NSButton(frame: .zero)
         stopButton.bezelStyle = .circular
         stopButton.image = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: "録画を停止")
@@ -185,7 +185,7 @@ final class RecordingIndicatorView: NSView {
 
         guard let context = NSGraphicsContext.current?.cgContext else { return }
 
-        // 赤枠（選択領域を囲む）
+        // Red border (around selection area)
         let borderRect = NSRect(
             x: padding - 2,
             y: 0,
@@ -196,7 +196,7 @@ final class RecordingIndicatorView: NSView {
         context.setLineWidth(3.0)
         context.stroke(borderRect)
 
-        // バッジ背景（赤い丸角矩形）
+        // Badge background (red rounded rectangle)
         let badgeY = bounds.height - badgeHeight
         let badgeWidth = (stopButton.frame.maxX - padding) + 8
         let badgeBgRect = NSRect(x: padding, y: badgeY, width: badgeWidth, height: badgeHeight)

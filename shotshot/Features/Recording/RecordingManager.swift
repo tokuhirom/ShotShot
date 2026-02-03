@@ -63,7 +63,7 @@ final class RecordingManager: NSObject {
     // MARK: - Private
 
     private func beginRecording(selection: CaptureSelection) async throws -> URL {
-        // 一時ファイルの準備
+        // Prepare temp file
         let tempDir = FileManager.default.temporaryDirectory
         let tempURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("mp4")
         self.tempFileURL = tempURL
@@ -150,7 +150,7 @@ final class RecordingManager: NSObject {
         try await scStream.startCapture()
         NSLog("[RecordingManager] SCStream capture started")
 
-        // 停止を待機
+        // Wait for stop
         let resultURL: URL = try await withCheckedThrowingContinuation { continuation in
             self.stopContinuation = continuation
         }
@@ -162,11 +162,11 @@ final class RecordingManager: NSObject {
         guard isRecording else { return }
         isRecording = false
 
-        // インジケータを閉じる
+        // Close indicator
         indicatorWindow?.close()
         indicatorWindow = nil
 
-        // SCStream 停止
+        // Stop SCStream
         if let stream = stream {
             do {
                 try await stream.stopCapture()
@@ -220,7 +220,7 @@ final class RecordingManager: NSObject {
         assetWriter = nil
         videoInput = nil
 
-        // 一時ファイル削除
+        // Remove temp file
         if let url = tempFileURL {
             try? FileManager.default.removeItem(at: url)
         }
@@ -229,13 +229,13 @@ final class RecordingManager: NSObject {
     }
 
     private func showIndicator(for selection: CaptureSelection) {
-        // 選択領域をスクリーン座標に変換
+        // Convert selection area to screen coordinates
         guard let screen = NSScreen.screens.first(where: { $0.displayID == selection.displayID }) ?? NSScreen.main else {
             return
         }
 
-        // CaptureSelection.rect は画面座標系（top-left origin）なので
-        // NSWindow 座標系（bottom-left origin）に変換
+        // CaptureSelection.rect is in screen coordinates (top-left origin),
+        // so convert to NSWindow coordinates (bottom-left origin)
         let screenFrame = screen.frame
         let selectionInScreen = NSRect(
             x: screenFrame.origin.x + selection.rect.origin.x,

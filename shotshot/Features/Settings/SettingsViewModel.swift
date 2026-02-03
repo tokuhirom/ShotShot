@@ -82,7 +82,7 @@ final class SettingsViewModel {
         settings.hotkeyModifiers = modifiers
         settings.hotkeyKeyCode = keyCode
 
-        // ホットキーを即時再登録
+        // Re-register hotkey immediately
         NotificationCenter.default.post(name: .hotkeySettingsChanged, object: nil)
 
         hotkeyStatus = "ホットキーを更新しました"

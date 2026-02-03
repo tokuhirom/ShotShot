@@ -88,14 +88,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func setupKeyEventMonitor() {
-        // Cmd+V をローカルで監視（アプリがアクティブな時のみ）
+        // Monitor Cmd+V locally (only when the app is active)
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             // Cmd+V (keyCode 9 = V)
             if event.modifierFlags.contains(.command) && event.keyCode == 9 {
                 Task { @MainActor in
                     self?.pasteFromClipboard()
                 }
-                return nil  // イベントを消費
+                return nil  // Consume the event
             }
             return event
         }
@@ -109,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         print("[shotshot] Pasted image from clipboard: \(image.size)")
 
-        // Screenshot を作成（scaleFactor は 1.0、displayID は 0）
+        // Create a Screenshot (scaleFactor is 1.0, displayID is 0)
         let screenshot = Screenshot(
             image: image,
             displayID: 0,
@@ -169,7 +169,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return
         }
 
-        // 録画中なら停止
+        // Stop if already recording
         if recordingManager.isRecording {
             recordingManager.stopRecording()
             return
@@ -210,10 +210,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         window.title = "ShotShot"
         window.contentView = NSHostingView(rootView: editorView)
-        window.isReleasedWhenClosed = false  // ARC管理のため
-        window.delegate = self  // ウィンドウ閉じた時に参照をクリア
+        window.isReleasedWhenClosed = false  // Keep under ARC management
+        window.delegate = self  // Clear reference when the window closes
 
-        // 新しいウィンドウは少しずらして配置
+        // Stagger new windows slightly
         if let lastWindow = editorWindows.first {
             let lastFrame = lastWindow.frame
             window.setFrameOrigin(NSPoint(x: lastFrame.origin.x + 30, y: lastFrame.origin.y - 30))
@@ -227,7 +227,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    // NSWindowDelegate - ウィンドウが閉じられた時に参照をクリア
+    // NSWindowDelegate - Clear reference when the window closes
     nonisolated func windowWillClose(_ notification: Notification) {
         guard let closingWindow = notification.object as? NSWindow else { return }
         Task { @MainActor in
@@ -238,7 +238,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func openSettings() {
         print("[shotshot] openSettings called")
 
-        // 既存のウィンドウがあれば前面に
+        // Bring existing window to front if it exists
         if let window = settingsWindow, window.isVisible {
             print("[shotshot] Existing settings window found, bringing to front")
             window.makeKeyAndOrderFront(nil)

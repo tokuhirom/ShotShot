@@ -32,12 +32,12 @@ struct VideoExporter {
         panel.nameFieldStringValue = generateFilename()
         panel.canCreateDirectories = true
 
-        // フォーマット選択用のアクセサリビュー
+        // Accessory view for format selection
         let formatPicker = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 200, height: 28), pullsDown: false)
         for format in VideoFormat.allCases {
             formatPicker.addItem(withTitle: format.rawValue)
         }
-        formatPicker.selectItem(at: 0) // MP4 をデフォルトに
+        formatPicker.selectItem(at: 0) // Default to MP4
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 250, height: 40))
         let label = NSTextField(labelWithString: "フォーマット:")
@@ -47,7 +47,7 @@ struct VideoExporter {
         accessoryView.addSubview(formatPicker)
         panel.accessoryView = accessoryView
 
-        // ファイルタイプの更新
+        // Update file types
         panel.allowedContentTypes = [VideoFormat.mp4.utType]
         formatPicker.target = FormatPickerTarget.shared
         formatPicker.action = #selector(FormatPickerTarget.formatChanged(_:))
@@ -61,7 +61,7 @@ struct VideoExporter {
         }
 
         guard response == .OK, let url = panel.url else {
-            // キャンセル時は一時ファイル削除
+            // Remove the temp file on cancel
             try? FileManager.default.removeItem(at: tempMP4URL)
             return
         }
@@ -72,7 +72,7 @@ struct VideoExporter {
         do {
             switch format {
             case .mp4:
-                // 既存ファイルを上書き
+                // Overwrite existing file
                 if FileManager.default.fileExists(atPath: url.path) {
                     try FileManager.default.removeItem(at: url)
                 }
@@ -82,13 +82,13 @@ struct VideoExporter {
             case .gif:
                 let gifURL = url.deletingPathExtension().appendingPathExtension("gif")
                 try await convertMP4ToGIF(source: tempMP4URL, destination: gifURL, fps: 10, maxWidth: 640)
-                // 一時MP4を削除
+                // Remove temp MP4
                 try? FileManager.default.removeItem(at: tempMP4URL)
                 NSLog("[VideoExporter] GIF saved to: %@", gifURL.path)
             }
         } catch {
             NSLog("[VideoExporter] Save error: %@", error.localizedDescription)
-            // 一時ファイル削除
+            // Remove temp file
             try? FileManager.default.removeItem(at: tempMP4URL)
 
             let alert = NSAlert()
@@ -111,7 +111,7 @@ struct VideoExporter {
         generator.requestedTimeToleranceBefore = CMTime(value: 1, timescale: CMTimeScale(fps * 2))
         generator.requestedTimeToleranceAfter = CMTime(value: 1, timescale: CMTimeScale(fps * 2))
 
-        // 最大幅でリサイズ
+        // Resize to max width
         generator.maximumSize = CGSize(width: maxWidth, height: 0)
 
         let frameCount = Int(durationSeconds * Double(fps))
@@ -123,7 +123,7 @@ struct VideoExporter {
             times.append(NSValue(time: time))
         }
 
-        // GIF 作成
+        // Create GIF
         guard let destination = CGImageDestinationCreateWithURL(
             destination as CFURL,
             UTType.gif.identifier as CFString,
@@ -135,7 +135,7 @@ struct VideoExporter {
 
         let gifProperties: [String: Any] = [
             kCGImagePropertyGIFDictionary as String: [
-                kCGImagePropertyGIFLoopCount as String: 0 // 無限ループ
+                kCGImagePropertyGIFLoopCount as String: 0 // Infinite loop
             ]
         ]
         CGImageDestinationSetProperties(destination, gifProperties as CFDictionary)
@@ -147,7 +147,7 @@ struct VideoExporter {
             ]
         ]
 
-        // フレームを生成して追加
+        // Generate and add frames
         for time in times {
             let cmTime = time.timeValue
             do {
@@ -184,7 +184,7 @@ enum VideoExportError: LocalizedError {
     }
 }
 
-// NSSavePanel のフォーマット切り替え用ヘルパー
+// Helper for switching NSSavePanel format
 @MainActor
 final class FormatPickerTarget: NSObject {
     static let shared = FormatPickerTarget()

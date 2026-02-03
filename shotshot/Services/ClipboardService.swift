@@ -17,7 +17,7 @@ struct ClipboardService {
     static func pasteImage() -> NSImage? {
         let pasteboard = NSPasteboard.general
 
-        // 画像タイプをチェック
+        // Check image types
         let imageTypes: [NSPasteboard.PasteboardType] = [
             .tiff,
             .png,
@@ -32,7 +32,7 @@ struct ClipboardService {
             }
         }
 
-        // ファイルURLから画像を読み込む
+        // Load an image from a file URL
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL] {
             for url in urls {
                 if let image = NSImage(contentsOf: url) {

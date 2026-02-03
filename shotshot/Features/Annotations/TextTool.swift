@@ -19,7 +19,7 @@ struct TextTool: AnnotationToolProtocol {
         let font = NSFont.systemFont(ofSize: fontSize, weight: .bold)
         let strokeWidth = fontSize * 0.08
 
-        // 白い縁取りを描画（複数方向にオフセットして描画）
+        // Draw a white outline (offset in multiple directions)
         let strokeAttributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: NSColor.white
@@ -38,7 +38,7 @@ struct TextTool: AnnotationToolProtocol {
             CTLineDraw(strokeLine, context)
         }
 
-        // メインテキストを描画
+        // Draw main text
         let mainAttributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: annotation.color

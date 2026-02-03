@@ -5,12 +5,12 @@ import Foundation
 
 struct MosaicTool: AnnotationToolProtocol {
     static func draw(_ annotation: Annotation, in context: CGContext, imageSize: CGSize, scaleFactor: CGFloat = 1.0) {
-        // 注釈座標をスケールファクターで調整
+        // Adjust annotation coordinates by scale factor
         let scale = scaleFactor
         let scaledStart = CGPoint(x: annotation.startPoint.x * scale, y: annotation.startPoint.y * scale)
         let scaledEnd = CGPoint(x: annotation.endPoint.x * scale, y: annotation.endPoint.y * scale)
 
-        // CGImage用の座標（左上原点）
+        // Coordinates for CGImage (top-left origin)
         let cropRect = CGRect(
             x: min(scaledStart.x, scaledEnd.x),
             y: min(scaledStart.y, scaledEnd.y),
@@ -18,7 +18,7 @@ struct MosaicTool: AnnotationToolProtocol {
             height: abs(scaledEnd.y - scaledStart.y)
         )
 
-        // CGContext用の座標（左下原点）
+        // Coordinates for CGContext (bottom-left origin)
         let drawRect = CGRect(
             x: cropRect.origin.x,
             y: imageSize.height - cropRect.origin.y - cropRect.height,
@@ -89,7 +89,7 @@ struct MosaicTool: AnnotationToolProtocol {
             return nil
         }
 
-        // ブラーは画像の端が広がるので、元のサイズでクリップ
+        // Blur expands edges, so clip to original size
         let ciContext = CIContext()
         return ciContext.createCGImage(outputImage, from: ciImage.extent)
     }

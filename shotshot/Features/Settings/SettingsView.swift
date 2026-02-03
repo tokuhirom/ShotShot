@@ -48,7 +48,7 @@ struct HotkeySettingsView: View {
         Form {
             Section("キャプチャのショートカット") {
                 VStack(alignment: .leading, spacing: 12) {
-                    // 修飾キー（2行に分けて配置）
+                    // Modifier keys (split into two rows)
                     VStack(alignment: .leading, spacing: 8) {
                         Text("修飾キー:")
                             .font(.caption)
@@ -70,7 +70,7 @@ struct HotkeySettingsView: View {
 
                     Divider()
 
-                    // キー入力
+                    // Key input
                     HStack {
                         Text("キー:")
                             .font(.caption)
@@ -85,7 +85,7 @@ struct HotkeySettingsView: View {
                             .foregroundColor(.secondary)
                     }
 
-                    // 現在のショートカット表示
+                    // Current shortcut display
                     HStack {
                         Text("現在:")
                             .font(.caption)

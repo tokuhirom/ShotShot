@@ -26,7 +26,7 @@ struct RectangleTool: AnnotationToolProtocol {
 
         context.saveGState()
 
-        // パスを作成（角丸 or 角張り）
+        // Create the path (rounded or sharp corners)
         let path: CGPath
         if let cornerRadius = annotation.cornerRadius, cornerRadius > 0 {
             path = CGPath(roundedRect: rect, cornerWidth: cornerRadius * scale, cornerHeight: cornerRadius * scale, transform: nil)

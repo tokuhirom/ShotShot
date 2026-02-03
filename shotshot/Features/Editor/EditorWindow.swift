@@ -12,7 +12,7 @@ struct EditorWindow: View {
             bottomBar
         }
         .frame(minWidth: 600, minHeight: 400)
-        // キーボードショートカット
+        // Keyboard shortcuts
         .background(
             Group {
                 // ⌘Z: Undo
@@ -23,15 +23,15 @@ struct EditorWindow: View {
                 Button("") { viewModel.redo() }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
                     .opacity(0)
-                // ⌘C: クリップボードにコピー
+                // ⌘C: Copy to clipboard
                 Button("") { viewModel.copyToClipboard() }
                     .keyboardShortcut("c", modifiers: .command)
                     .opacity(0)
-                // ⌘S: 名前を付けて保存
+                // ⌘S: Save As
                 Button("") { viewModel.saveAs() }
                     .keyboardShortcut("s", modifiers: .command)
                     .opacity(0)
-                // Delete: 選択中の注釈を削除
+                // Delete: Delete selected annotation
                 Button("") { viewModel.deleteSelectedAnnotation() }
                     .keyboardShortcut(.delete, modifiers: [])
                     .opacity(0)
@@ -65,15 +65,15 @@ struct EditorWindow: View {
             Divider()
                 .frame(height: 24)
 
-            // 色選択ボタン（Popover）
+            // Color picker button (popover)
             ColorPickerButton(selectedColor: $viewModel.selectedColor, presetColors: Self.presetColors)
 
             Divider()
                 .frame(height: 24)
 
-            // ツールごとのオプション
+            // Tool-specific options
             if viewModel.selectedTool == .text {
-                // テキスト: フォントサイズ
+                // Text: font size
                 Menu {
                     ForEach(Self.fontSizes, id: \.self) { size in
                         Button("\(Int(size)) pt") {
@@ -91,7 +91,7 @@ struct EditorWindow: View {
                 .menuStyle(.borderlessButton)
                 .frame(width: 70)
             } else if viewModel.selectedTool == .rectangle {
-                // 四角: 角丸/角張り切り替え + 線幅
+                // Rectangle: rounded/square toggle + line width
                 HStack(spacing: 8) {
                     Button(action: { viewModel.useRoundedCorners.toggle() }) {
                         Image(systemName: viewModel.useRoundedCorners ? "rectangle.roundedtop" : "rectangle")
@@ -109,7 +109,7 @@ struct EditorWindow: View {
                     }
                 }
             } else if viewModel.selectedTool == .crop {
-                // クロップ: 適用/キャンセルボタン
+                // Crop: apply/cancel buttons
                 HStack(spacing: 8) {
                     if viewModel.cropRect != nil {
                         Button("適用") {
@@ -128,10 +128,10 @@ struct EditorWindow: View {
                     }
                 }
             } else if viewModel.selectedTool == .select {
-                // 選択ツール: 何も表示しない
+                // Select tool: show nothing
                 EmptyView()
             } else if viewModel.selectedTool == .mosaic {
-                // モザイク: タイプ選択
+                // Mosaic: type selection
                 HStack(spacing: 8) {
                     ForEach(MosaicType.allCases, id: \.self) { type in
                         Button(action: { viewModel.mosaicType = type }) {
@@ -155,7 +155,7 @@ struct EditorWindow: View {
                     }
                 }
             } else {
-                // その他: 線幅のみ
+                // Others: line width only
                 HStack(spacing: 4) {
                     Text("太さ")
                         .font(.caption)
@@ -210,11 +210,11 @@ struct EditorWindow: View {
                 let displayScaleValue = scaledSize.width / expandedSize.width
 
                 ZStack(alignment: .topLeading) {
-                    // 白背景（拡張エリア全体）
+                    // White background (entire expanded area)
                     Color.white
                         .frame(width: scaledSize.width, height: scaledSize.height)
 
-                    // 元画像を offset 位置に配置
+                    // Place the source image at the offset position
                     Image(nsImage: viewModel.compositeImage)
                         .resizable()
                         .frame(
@@ -226,7 +226,7 @@ struct EditorWindow: View {
                             y: offset.y * displayScaleValue
                         )
 
-                    // 注釈キャンバス（フルサイズ）
+                    // Annotation canvas (full size)
                     AnnotationCanvas(
                         viewModel: viewModel,
                         canvasSize: scaledSize,
@@ -248,7 +248,7 @@ struct EditorWindow: View {
 
     private var bottomBar: some View {
         HStack {
-            // 倍率表示
+            // Zoom display
             Text("\(Int(displayScale * 100))%")
                 .foregroundColor(.secondary)
                 .font(.caption)
@@ -342,11 +342,11 @@ struct ColorSwatch: View {
 
     var body: some View {
         ZStack {
-            // 白い縁取り
+            // White outline
             Circle()
                 .fill(Color.white)
                 .frame(width: size, height: size)
-            // メインカラー
+            // Main color
             Circle()
                 .fill(Color(nsColor: color))
                 .frame(width: size - 3, height: size - 3)
@@ -383,7 +383,7 @@ struct ColorPickerButton: View {
         .buttonStyle(.plain)
         .popover(isPresented: $showPopover, arrowEdge: .bottom) {
             VStack(spacing: 8) {
-                // 色グリッド (4x2)
+                // Color grid (4x2)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 28))], spacing: 6) {
                     ForEach(0..<presetColors.count, id: \.self) { index in
                         let (_, color) = presetColors[index]
@@ -411,7 +411,7 @@ struct ColorPickerButton: View {
 
                 Divider()
 
-                // カスタムカラーピッカー
+                // Custom color picker
                 ColorPicker("カスタム色", selection: Binding(
                     get: { Color(nsColor: selectedColor) },
                     set: { selectedColor = NSColor($0) }

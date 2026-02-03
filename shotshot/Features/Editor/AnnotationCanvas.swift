@@ -1,10 +1,10 @@
 import AppKit
 import SwiftUI
 
-// IME対応のテキストビュー
+// IME-aware text view
 struct IMEAwareTextField: NSViewRepresentable {
     @Binding var text: String
-    var displayText: Binding<String>  // 表示用（縁取り用）
+    var displayText: Binding<String>  // Display text (for outline)
     var font: NSFont
     var textColor: NSColor
     var onCommit: () -> Void
@@ -28,7 +28,7 @@ struct IMEAwareTextField: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSTextView, context: Context) {
-        // 初期テキストの設定（初回のみ）
+        // Set initial text (first time only)
         if context.coordinator.isFirstUpdate && !text.isEmpty {
             nsView.string = text
             context.coordinator.isFirstUpdate = false
@@ -36,7 +36,7 @@ struct IMEAwareTextField: NSViewRepresentable {
         nsView.font = font
         nsView.textColor = textColor
 
-        // 初回表示時にフォーカスを設定
+        // Set focus on first display
         DispatchQueue.main.async {
             if nsView.window?.firstResponder != nsView {
                 nsView.window?.makeFirstResponder(nsView)
@@ -58,13 +58,13 @@ struct IMEAwareTextField: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            // 表示用テキストは常に更新（縁取り表示用）
+            // Always update display text (for outline rendering)
             parent.displayText.wrappedValue = textView.string
         }
 
         func textDidEndEditing(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            // 確定時のみ実際のテキストを更新
+            // Update actual text only on commit
             parent.text = textView.string
             parent.displayText.wrappedValue = textView.string
             parent.onCommit()
@@ -73,10 +73,10 @@ struct IMEAwareTextField: NSViewRepresentable {
 }
 
 enum ResizeHandle {
-    case startPoint      // startPoint を動かす
-    case endPoint        // endPoint を動かす
-    case startXEndY      // startPoint.x と endPoint.y を動かす（四角形用）
-    case endXStartY      // endPoint.x と startPoint.y を動かす（四角形用）
+    case startPoint      // Move startPoint
+    case endPoint        // Move endPoint
+    case startXEndY      // Move startPoint.x and endPoint.y (rectangle)
+    case endXStartY      // Move endPoint.x and startPoint.y (rectangle)
 }
 
 struct AnnotationCanvas: View {
@@ -85,18 +85,18 @@ struct AnnotationCanvas: View {
     let expandedSize: CGSize
     let imageOffset: CGPoint
     @State private var isEditing = false
-    @State private var editingText = ""  // 確定済みテキスト
-    @State private var displayText = ""  // 表示用テキスト（IME入力中も更新）
-    @State private var editingPosition: CGPoint = .zero  // 表示座標
-    @State private var editingImagePosition: CGPoint = .zero  // 画像座標（拡張計算用に固定保持）
-    @State private var editingAnnotationId: UUID? = nil  // 編集中のテキスト注釈ID（nilなら新規作成）
+    @State private var editingText = ""  // Committed text
+    @State private var displayText = ""  // Display text (updated during IME input)
+    @State private var editingPosition: CGPoint = .zero  // Display coordinates
+    @State private var editingImagePosition: CGPoint = .zero  // Image coordinates (fixed for expansion)
+    @State private var editingAnnotationId: UUID? = nil  // Editing text annotation ID (nil for new)
     @State private var isDraggingAnnotation = false
     @State private var isResizingAnnotation = false
     @State private var activeResizeHandle: ResizeHandle? = nil
     @State private var dragStartPoint: CGPoint = .zero
     @State private var lastClickTime: Date = .distantPast
     @State private var lastClickPoint: CGPoint = .zero
-    @State private var pendingSelectAnnotationId: UUID? = nil  // 描画ツールでのクリック選択用
+    @State private var pendingSelectAnnotationId: UUID? = nil  // Click selection for drawing tools
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -108,12 +108,12 @@ struct AnnotationCanvas: View {
                 )
 
                 for annotation in viewModel.annotations {
-                    // モザイクはcompositeImageで適用済みなのでスキップ
+                    // Mosaic is already applied in compositeImage, so skip
                     if annotation.type != .mosaic {
                         drawAnnotation(annotation, context: &context, scale: scale)
                     }
 
-                    // 選択中の注釈に枠を表示
+                    // Draw frame for selected annotation
                     if annotation.id == viewModel.selectedAnnotationId {
                         drawSelectionIndicator(for: annotation, context: &context, scale: scale)
                     }
@@ -123,7 +123,7 @@ struct AnnotationCanvas: View {
                     drawAnnotation(current, context: &context, scale: scale)
                 }
 
-                // クロップオーバーレイを描画
+                // Draw the crop overlay
                 if let cropRect = viewModel.cropRect {
                     drawCropOverlay(cropRect: cropRect, context: &context, scale: scale, canvasSize: size)
                 }
@@ -139,10 +139,10 @@ struct AnnotationCanvas: View {
             )
 
             if isEditing {
-                // 表示スケールを計算
+                // Calculate display scale
                 let displayScale = canvasSize.height / expandedSize.height
                 let scaledFontSize = viewModel.fontSize * displayScale
-                // 画像座標からの動的な表示位置（拡張に追従）
+                // Dynamic display position from image coordinates (tracks expansion)
                 let scale = CGSize(
                     width: expandedSize.width / canvasSize.width,
                     height: expandedSize.height / canvasSize.height
@@ -155,7 +155,7 @@ struct AnnotationCanvas: View {
                 VStack {
                     HStack {
                         ZStack(alignment: .leading) {
-                            // 縁取り用テキスト（白）- displayTextを使用
+                            // Outline text (white) - uses displayText
                             let strokeWidth: CGFloat = scaledFontSize * 0.08
                             let offsets: [(CGFloat, CGFloat)] = [
                                 (-strokeWidth, -strokeWidth), (0, -strokeWidth), (strokeWidth, -strokeWidth),
@@ -169,7 +169,7 @@ struct AnnotationCanvas: View {
                                     .offset(x: offsets[i].0, y: offsets[i].1)
                             }
 
-                            // IME対応入力フィールド
+                            // IME-aware input field
                             IMEAwareTextField(
                                 text: $editingText,
                                 displayText: $displayText,
@@ -201,7 +201,7 @@ struct AnnotationCanvas: View {
             }
         }
         .onChange(of: viewModel.selectedTool) { _, _ in
-            // ツール切替時にテキスト編集中ならIMEを確定
+            // Commit IME when switching tools during text editing
             if isEditing {
                 if let window = NSApp.keyWindow {
                     window.makeFirstResponder(nil)
@@ -219,13 +219,13 @@ struct AnnotationCanvas: View {
     }
 
     private func handleDrag(_ value: DragGesture.Value) {
-        // テキスト編集中に他の場所をクリックしたら編集を終了
+        // End editing when clicking elsewhere during text input
         if isEditing {
-            // IMEの未確定文字列を確定させるため、フォーカスを外す
+            // Remove focus to commit pending IME text
             if let window = NSApp.keyWindow {
                 window.makeFirstResponder(nil)
             }
-            // finishTextEditingはcontrolTextDidEndEditingから呼ばれる
+            // finishTextEditing is called from controlTextDidEndEditing
             return
         }
 
@@ -243,10 +243,10 @@ struct AnnotationCanvas: View {
             y: value.location.y * scale.height - imageOffset.y
         )
 
-        // ドラッグ開始時
+        // Drag start
         if viewModel.getCurrentAnnotation() == nil && !isDraggingAnnotation && !isResizingAnnotation {
             if viewModel.selectedTool == .select {
-                // ダブルクリック検出
+                // Detect double-click
                 let now = Date()
                 let clickInterval = now.timeIntervalSince(lastClickTime)
                 let clickDistance = hypot(value.startLocation.x - lastClickPoint.x, value.startLocation.y - lastClickPoint.y)
@@ -255,46 +255,46 @@ struct AnnotationCanvas: View {
                 lastClickTime = now
                 lastClickPoint = value.startLocation
 
-                // 選択ツール: 選択・移動・リサイズ
+                // Select tool: select, move, resize
                 if let selectedId = viewModel.selectedAnnotationId,
                    let annotation = viewModel.annotations.first(where: { $0.id == selectedId }),
                    let handle = hitTestResizeHandle(annotation: annotation, point: value.startLocation, scale: scale) {
-                    // リサイズハンドルをヒット → リサイズモード
+                    // Hit resize handle -> resize mode
                     viewModel.saveStateForUndo()
                     isResizingAnnotation = true
                     activeResizeHandle = handle
                     dragStartPoint = scaledStart
                 } else if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
-                    // テキスト注釈をダブルクリック → 編集モード
+                    // Double-click text annotation -> edit mode
                     if isDoubleClick && hitAnnotation.type == .text {
                         startEditingTextAnnotation(hitAnnotation)
                         return
                     }
-                    // 既存の注釈をヒット → 選択・移動モード
+                    // Hit existing annotation -> select/move mode
                     viewModel.saveStateForUndo()
                     viewModel.selectAnnotation(id: hitAnnotation.id)
                     isDraggingAnnotation = true
                     dragStartPoint = scaledStart
                 } else {
-                    // ヒットなし → 選択解除
+                    // No hit -> deselect
                     viewModel.deselectAnnotation()
                 }
             } else if viewModel.selectedTool == .crop {
-                // クロップツール: 切り抜き領域の選択開始
+                // Crop tool: start selecting crop area
                 if viewModel.cropRect == nil {
                     viewModel.startCrop(at: scaledStart)
                 }
             } else if viewModel.selectedTool == .text {
-                // テキストツール: 既存注釈のクリック選択 or 新規テキスト入力
+                // Text tool: click to select existing or start new text
                 if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
                     pendingSelectAnnotationId = hitAnnotation.id
                 } else {
                     viewModel.deselectAnnotation()
                 }
             } else {
-                // 描画ツール: 既存注釈のクリック選択 or 新規作成
+                // Drawing tools: click to select existing or create new
                 if let hitAnnotation = viewModel.hitTest(at: scaledStart) {
-                    // 既存注釈あり → クリックなら選択、ドラッグなら新規作成
+                    // Existing annotation: click selects, drag creates new
                     pendingSelectAnnotationId = hitAnnotation.id
                 } else {
                     viewModel.deselectAnnotation()
@@ -303,20 +303,20 @@ struct AnnotationCanvas: View {
             }
         }
 
-        // 描画ツールで既存注釈上からドラッグ開始した場合、一定距離以上で新規作成に切り替え
+        // If dragging on an existing annotation, switch to creating new after a threshold
         if let _ = pendingSelectAnnotationId {
             let dragDistance = hypot(value.location.x - value.startLocation.x, value.location.y - value.startLocation.y)
             if dragDistance > 5 {
                 pendingSelectAnnotationId = nil
                 viewModel.deselectAnnotation()
-                // テキストツールの場合は新規注釈作成しない（handleDragEndでテキスト入力開始）
+                // For the text tool, do not create a new annotation (handleDragEnd starts input)
                 if viewModel.selectedTool != .text {
                     viewModel.startAnnotation(at: scaledStart)
                 }
             }
         }
 
-        // ドラッグ中
+        // Dragging
         if isResizingAnnotation, let handle = activeResizeHandle {
             viewModel.resizeSelectedAnnotation(handle: handle, to: scaledCurrent)
         } else if isDraggingAnnotation {
@@ -327,7 +327,7 @@ struct AnnotationCanvas: View {
             viewModel.moveSelectedAnnotation(by: delta)
             dragStartPoint = scaledCurrent
         } else if viewModel.selectedTool == .crop {
-            // クロップ領域を更新
+            // Update crop area
             viewModel.updateCrop(to: scaledCurrent)
         } else if viewModel.selectedTool != .text && viewModel.selectedTool != .select {
             viewModel.updateAnnotation(to: scaledCurrent)
@@ -346,23 +346,23 @@ struct AnnotationCanvas: View {
         )
 
         if let annotationId = pendingSelectAnnotationId {
-            // クリックで既存注釈を選択
+            // Click selects existing annotation
             pendingSelectAnnotationId = nil
             viewModel.selectAnnotation(id: annotationId)
             viewModel.selectedTool = .select
         } else if isResizingAnnotation {
-            // リサイズ完了
+            // Resize complete
             isResizingAnnotation = false
             activeResizeHandle = nil
         } else if isDraggingAnnotation {
-            // 移動完了
+            // Move complete
             isDraggingAnnotation = false
         } else if viewModel.selectedTool == .text {
             editingPosition = value.location
-            // 画像座標を固定保持（拡張によるoffset変動の影響を受けない）
+            // Keep image coordinates fixed (unaffected by expansion offset changes)
             editingImagePosition = scaledEnd
             isEditing = true
-            // 初期バウンズを設定（空テキスト）
+            // Set initial bounds (empty text)
             updateEditingTextBounds(text: "")
         } else {
             viewModel.finishAnnotation(at: scaledEnd)
@@ -379,9 +379,9 @@ struct AnnotationCanvas: View {
             y: (annotation.endPoint.y + imageOffset.y) / scale.height
         )
 
-        let handleSize: CGFloat = 16  // ヒット判定用に大きめ
+        let handleSize: CGFloat = 16  // Larger size for hit testing
 
-        // 矢印の場合は startPoint と endPoint の2点のみ
+        // For arrows, only startPoint and endPoint
         if annotation.type == .arrow {
             let handles: [(ResizeHandle, CGPoint)] = [
                 (.startPoint, displayStart),
@@ -399,7 +399,7 @@ struct AnnotationCanvas: View {
                 }
             }
         } else {
-            // 四角形/モザイク/テキストの場合は四隅
+            // For rectangle/mosaic/text, use all four corners
             let handles: [(ResizeHandle, CGPoint)] = [
                 (.startPoint, displayStart),
                 (.endPoint, displayEnd),
@@ -451,8 +451,8 @@ struct AnnotationCanvas: View {
 
     private func updateEditingTextBounds(text: String) {
         guard isEditing else { return }
-        // editingImagePosition は編集開始時に固定された画像座標を使う
-        // （拡張によるimageOffset変動の影響を受けない）
+        // editingImagePosition uses the fixed image coordinates from edit start
+        // (unaffected by expansion-related imageOffset changes)
         viewModel.editingTextBounds = Annotation.computeTextBounds(
             text: text,
             fontSize: viewModel.fontSize,
@@ -461,7 +461,7 @@ struct AnnotationCanvas: View {
     }
 
     private func finishTextEditing() {
-        // displayTextを使用（最新の入力内容）
+        // Use displayText (latest input)
         let finalText = displayText
 
         defer {
@@ -472,7 +472,7 @@ struct AnnotationCanvas: View {
         }
 
         guard !finalText.isEmpty else {
-            // 空の場合、編集中だった既存注釈は削除
+            // If empty, delete the previously edited annotation
             if let annotationId = editingAnnotationId {
                 viewModel.deleteAnnotation(id: annotationId)
             }
@@ -480,10 +480,10 @@ struct AnnotationCanvas: View {
         }
 
         if let annotationId = editingAnnotationId {
-            // 既存の注釈を更新
+            // Update existing annotation
             viewModel.updateTextAnnotation(id: annotationId, text: finalText)
         } else {
-            // 新規作成（editingImagePosition は編集開始時に固定された画像座標）
+            // Create new (editingImagePosition is fixed at edit start)
             viewModel.addTextAnnotation(at: editingImagePosition, text: finalText)
         }
     }
@@ -496,21 +496,21 @@ struct AnnotationCanvas: View {
             height: expandedSize.height / canvasSize.height
         )
 
-        // 画像座標系からキャンバス座標系に変換（imageOffset を加算）
+        // Convert from image coordinates to canvas coordinates (add imageOffset)
         editingPosition = CGPoint(
             x: (annotation.endPoint.x + imageOffset.x) / scale.width,
             y: (annotation.endPoint.y + imageOffset.y) / scale.height
         )
-        // 画像座標を固定保持
+        // Keep image coordinates fixed
         editingImagePosition = annotation.endPoint
         editingText = text
         displayText = text
         editingAnnotationId = annotation.id
         isEditing = true
-        // 編集中テキストのバウンズを設定
+        // Set bounds for the editing text
         updateEditingTextBounds(text: text)
 
-        // 編集中は選択解除
+        // Deselect while editing
         viewModel.deselectAnnotation()
     }
 
@@ -531,7 +531,7 @@ struct AnnotationCanvas: View {
             drawRectangle(from: displayStart, to: displayEnd, color: annotation.color, lineWidth: annotation.lineWidth, cornerRadius: annotation.cornerRadius, context: &context)
         case .text:
             if let text = annotation.text {
-                // フォントサイズも表示スケールに合わせる
+                // Scale font size to display scale
                 let scaledFontSize = (annotation.fontSize ?? 16) / scale.height
                 drawText(text, at: displayEnd, color: annotation.color, fontSize: scaledFontSize, context: &context)
             }
@@ -610,7 +610,7 @@ struct AnnotationCanvas: View {
     }
 
     private func drawText(_ text: String, at point: CGPoint, color: NSColor, fontSize: CGFloat, context: inout GraphicsContext) {
-        // 白い縁取り
+        // White outline
         let strokeWidth: CGFloat = fontSize * 0.08
         let offsets: [(CGFloat, CGFloat)] = [
             (-strokeWidth, -strokeWidth), (0, -strokeWidth), (strokeWidth, -strokeWidth),
@@ -625,7 +625,7 @@ struct AnnotationCanvas: View {
             context.draw(outlineText, at: CGPoint(x: point.x + offset.0, y: point.y + offset.1), anchor: .topLeading)
         }
 
-        // メインテキスト
+        // Main text
         let mainText = Text(text)
             .font(.system(size: fontSize, weight: .bold))
             .foregroundColor(Color(nsColor: color))
@@ -681,7 +681,7 @@ struct AnnotationCanvas: View {
         let selectionRect: CGRect
         switch annotation.type {
         case .arrow:
-            // 矢印の場合は始点と終点を含む矩形
+            // For arrows, use a rectangle that includes start and end points
             selectionRect = CGRect(
                 x: min(displayStart.x, displayEnd.x) - 8,
                 y: min(displayStart.y, displayEnd.y) - 8,
@@ -696,7 +696,7 @@ struct AnnotationCanvas: View {
                 height: abs(displayEnd.y - displayStart.y) + 8
             )
         case .text:
-            // テキストも表示スケールに合わせて描画されるので、boundsもスケールする
+            // Text is drawn at display scale, so scale bounds as well
             if let bounds = annotation.textBounds() {
                 selectionRect = CGRect(
                     x: displayEnd.x - 4,
@@ -712,15 +712,15 @@ struct AnnotationCanvas: View {
         let path = Path(selectionRect)
         context.stroke(path, with: .color(.blue), style: StrokeStyle(lineWidth: 2, dash: [5, 3]))
 
-        // ハンドルを描画
+        // Draw handles
         let handleSize: CGFloat = 8
         let handles: [CGPoint]
 
         if annotation.type == .arrow {
-            // 矢印の場合は startPoint と endPoint の2点のみ
+            // For arrows, only startPoint and endPoint
             handles = [displayStart, displayEnd]
         } else {
-            // 四角形/モザイク/テキストの場合は四隅
+            // For rectangle/mosaic/text, use all four corners
             handles = [
                 displayStart,
                 displayEnd,
@@ -742,7 +742,7 @@ struct AnnotationCanvas: View {
     }
 
     private func drawCropOverlay(cropRect: CGRect, context: inout GraphicsContext, scale: CGSize, canvasSize: CGSize) {
-        // 画像座標系からキャンバス座標系に変換（imageOffset を加算）
+        // Convert from image coordinates to canvas coordinates (add imageOffset)
         let displayRect = CGRect(
             x: (cropRect.origin.x + imageOffset.x) / scale.width,
             y: (cropRect.origin.y + imageOffset.y) / scale.height,
@@ -750,38 +750,38 @@ struct AnnotationCanvas: View {
             height: cropRect.height / scale.height
         )
 
-        // 外側を暗くするオーバーレイ
+        // Overlay that dims the outside area
         let dimColor = Color.black.opacity(0.5)
 
-        // 上部
+        // Top
         if displayRect.minY > 0 {
             let topRect = CGRect(x: 0, y: 0, width: canvasSize.width, height: displayRect.minY)
             context.fill(Path(topRect), with: .color(dimColor))
         }
 
-        // 下部
+        // Bottom
         if displayRect.maxY < canvasSize.height {
             let bottomRect = CGRect(x: 0, y: displayRect.maxY, width: canvasSize.width, height: canvasSize.height - displayRect.maxY)
             context.fill(Path(bottomRect), with: .color(dimColor))
         }
 
-        // 左部
+        // Left
         if displayRect.minX > 0 {
             let leftRect = CGRect(x: 0, y: displayRect.minY, width: displayRect.minX, height: displayRect.height)
             context.fill(Path(leftRect), with: .color(dimColor))
         }
 
-        // 右部
+        // Right
         if displayRect.maxX < canvasSize.width {
             let rightRect = CGRect(x: displayRect.maxX, y: displayRect.minY, width: canvasSize.width - displayRect.maxX, height: displayRect.height)
             context.fill(Path(rightRect), with: .color(dimColor))
         }
 
-        // クロップ領域の枠線
+        // Crop area border
         let borderPath = Path(displayRect)
         context.stroke(borderPath, with: .color(.white), lineWidth: 2)
 
-        // 四隅のハンドル
+        // Corner handles
         let handleSize: CGFloat = 10
         let corners = [
             CGPoint(x: displayRect.minX, y: displayRect.minY),

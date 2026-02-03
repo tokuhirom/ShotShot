@@ -94,13 +94,25 @@ final class RecordingManager: NSObject {
 
         writer.startWriting()
 
-        // SCStream の構成
+        // Show indicator first so we can exclude it from recording
+        showIndicator(for: selection)
+
+        // SCStream configuration
         let content = try await SCShareableContent.current
         guard let display = content.displays.first(where: { $0.displayID == selection.displayID }) else {
             throw RecordingError.noDisplay
         }
 
-        let filter = SCContentFilter(display: display, excludingWindows: [])
+        // Find indicator window to exclude from recording
+        var excludedWindows: [SCWindow] = []
+        if let indicatorWindowNumber = indicatorWindow?.window.windowNumber {
+            if let scWindow = content.windows.first(where: { $0.windowID == CGWindowID(indicatorWindowNumber) }) {
+                excludedWindows.append(scWindow)
+                NSLog("[RecordingManager] Excluding indicator window %d from recording", indicatorWindowNumber)
+            }
+        }
+
+        let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
         let config = SCStreamConfiguration()
         config.sourceRect = selection.rect
         config.width = videoWidth
@@ -123,12 +135,9 @@ final class RecordingManager: NSObject {
         self.stream = scStream
         self.streamOutput = output
 
-        // ストリーム開始
+        // Start capture
         try await scStream.startCapture()
         NSLog("[RecordingManager] SCStream capture started")
-
-        // インジケータ表示
-        showIndicator(for: selection)
 
         // 停止を待機
         let resultURL: URL = try await withCheckedThrowingContinuation { continuation in

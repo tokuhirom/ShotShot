@@ -14,12 +14,14 @@ final class RecordingIndicatorWindow {
         let padding: CGFloat = 4
         let badgeHeight: CGFloat = 32
         let badgeGap: CGFloat = 8
+        let minBadgeWidth: CGFloat = 150  // Minimum width for badge (REC + time + stop button)
 
-        // 赤枠は選択領域の外側に表示
+        // Ensure window is wide enough for the badge
+        let frameWidth = max(selectionRect.width + padding * 2, minBadgeWidth)
         let frameRect = NSRect(
             x: selectionRect.origin.x - padding,
             y: selectionRect.origin.y - padding - badgeHeight - badgeGap,
-            width: selectionRect.width + padding * 2,
+            width: frameWidth,
             height: selectionRect.height + padding * 2 + badgeHeight + badgeGap
         )
 

@@ -77,10 +77,11 @@ final class SelectionOverlayWindow: NSWindow {
             object: self,
             queue: .main
         ) { [weak self] _ in
-            guard let self = self, !self.isCleaned, self.isVisible else { return }
-            // DispatchQueue.main.asyncは使わず直接実行（クリーンアップ中の問題を防ぐ）
-            self.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            MainActor.assumeIsolated {
+                guard let self = self, !self.isCleaned, self.isVisible else { return }
+                self.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
 
         NSCursor.crosshair.set()

@@ -53,7 +53,7 @@ struct VideoExporter {
         formatPicker.action = #selector(FormatPickerTarget.formatChanged(_:))
         FormatPickerTarget.shared.panel = panel
 
-        // シートではなく独立したダイアログとして表示（親ウィンドウがない場合の問題を回避）
+        // Show as independent dialog to avoid orphan window when no parent window exists
         let response = await withCheckedContinuation { continuation in
             panel.begin { response in
                 continuation.resume(returning: response)

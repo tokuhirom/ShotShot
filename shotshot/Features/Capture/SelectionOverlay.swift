@@ -41,7 +41,7 @@ final class SelectionOverlayWindow: NSWindow {
 
         self.level = .screenSaver
         self.isOpaque = false
-        self.backgroundColor = NSColor.black.withAlphaComponent(0.3)
+        self.backgroundColor = .clear
         self.ignoresMouseEvents = false
         self.acceptsMouseMovedEvents = true
         self.hasShadow = false

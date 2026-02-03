@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-struct Screenshot: Sendable {
+struct Screenshot: @unchecked Sendable {
     let image: NSImage
     let capturedAt: Date
     let displayID: CGDirectDisplayID?

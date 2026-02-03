@@ -81,7 +81,18 @@ final class RecordingManager: NSObject {
             AVVideoHeightKey: videoHeight,
         ]
 
-        let input = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
+        // Create format hint for BGRA input
+        var formatDescription: CMFormatDescription?
+        CMVideoFormatDescriptionCreate(
+            allocator: kCFAllocatorDefault,
+            codecType: kCVPixelFormatType_32BGRA,
+            width: Int32(videoWidth),
+            height: Int32(videoHeight),
+            extensions: nil,
+            formatDescriptionOut: &formatDescription
+        )
+
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings, sourceFormatHint: formatDescription)
         input.expectsMediaDataInRealTime = true
 
         guard writer.canAdd(input) else {
@@ -120,6 +131,7 @@ final class RecordingManager: NSObject {
         config.scalesToFit = false
         config.showsCursor = true
         config.minimumFrameInterval = CMTime(value: 1, timescale: 30) // 30fps
+        config.pixelFormat = kCVPixelFormatType_32BGRA
 
         let scStream = SCStream(filter: filter, configuration: config, delegate: nil)
 

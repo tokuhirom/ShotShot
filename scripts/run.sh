@@ -34,9 +34,11 @@ echo "---"
 # Record the latest crash log before launch
 BEFORE_CRASH=$(ls -t "$CRASH_LOGS_DIR" 2>/dev/null | grep -i shotshot | head -1)
 
-# Output to both console and file with tee (no buffering)
-"$APP_PATH/Contents/MacOS/ShotShot" 2>&1 | stdbuf -oL tee "$LOG_FILE"
-EXIT_CODE=${PIPESTATUS[0]}
+# Output only to file (avoid TTY/pipe issues)
+"$APP_PATH/Contents/MacOS/ShotShot" > "$LOG_FILE" 2>&1 &
+APP_PID=$!
+wait "$APP_PID"
+EXIT_CODE=$?
 
 # Check whether the app crashed
 if [ $EXIT_CODE -ne 0 ]; then

@@ -65,17 +65,19 @@ final class RecordingManager: NSObject {
     private func beginRecording(selection: CaptureSelection) async throws -> URL {
         // Prepare temp file
         let tempDir = FileManager.default.temporaryDirectory
-        let tempURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("mp4")
+        let tempURL = tempDir.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
         self.tempFileURL = tempURL
 
-        // AVAssetWriter configuration (use logical size, not physical pixels)
-        let writer = try AVAssetWriter(outputURL: tempURL, fileType: .mp4)
+        let adjustedSelection = adjustSelectionForRecording(selection)
 
-        let videoWidth = Int(selection.rect.width)
-        let videoHeight = Int(selection.rect.height)
+        // AVAssetWriter configuration (use logical size, not physical pixels)
+        let writer = try AVAssetWriter(outputURL: tempURL, fileType: .mov)
+
+        let videoWidth = Int(adjustedSelection.rect.width)
+        let videoHeight = Int(adjustedSelection.rect.height)
 
         let videoSettings: [String: Any] = [
-            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: videoWidth,
             AVVideoHeightKey: videoHeight,
         ]
@@ -92,24 +94,39 @@ final class RecordingManager: NSObject {
         )
 
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings, sourceFormatHint: formatDescription)
-        input.expectsMediaDataInRealTime = true
+        input.expectsMediaDataInRealTime = false
 
         guard writer.canAdd(input) else {
             throw RecordingError.writerSetupFailed("Cannot add video input to writer")
         }
         writer.add(input)
 
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+            assetWriterInput: input,
+            sourcePixelBufferAttributes: [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                kCVPixelBufferWidthKey as String: videoWidth,
+                kCVPixelBufferHeightKey as String: videoHeight,
+                kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+            ]
+        )
+
         self.assetWriter = writer
         self.videoInput = input
 
-        writer.startWriting()
+        if !writer.startWriting() {
+            let error = writer.error ?? RecordingError.writerSetupFailed("startWriting failed without error")
+            NSLog("[RecordingManager] startWriting failed: %@", error.localizedDescription)
+            throw error
+        }
+        NSLog("[RecordingManager] startWriting ok. status=%ld", writer.status.rawValue)
 
         // Show indicator first so we can exclude it from recording
-        showIndicator(for: selection)
+        showIndicator(for: adjustedSelection)
 
         // SCStream configuration
         let content = try await SCShareableContent.current
-        guard let display = content.displays.first(where: { $0.displayID == selection.displayID }) else {
+        guard let display = content.displays.first(where: { $0.displayID == adjustedSelection.displayID }) else {
             throw RecordingError.noDisplay
         }
 
@@ -124,7 +141,7 @@ final class RecordingManager: NSObject {
 
         let filter = SCContentFilter(display: display, excludingWindows: excludedWindows)
         let config = SCStreamConfiguration()
-        config.sourceRect = selection.rect
+        config.sourceRect = adjustedSelection.rect
         config.width = videoWidth
         config.height = videoHeight
         config.scalesToFit = false
@@ -134,7 +151,7 @@ final class RecordingManager: NSObject {
 
         let scStream = SCStream(filter: filter, configuration: config, delegate: nil)
 
-        let output = RecordingStreamOutput(writer: writer, videoInput: input) { [weak self] error in
+        let output = RecordingStreamOutput(writer: writer, videoInput: input, pixelBufferAdaptor: adaptor) { [weak self] error in
             NSLog("[RecordingManager] Stream output error: %@", error.localizedDescription)
             Task { @MainActor in
                 self?.handleStreamError(error)
@@ -250,6 +267,33 @@ final class RecordingManager: NSObject {
         }
         indicator.makeKeyAndOrderFront()
         indicatorWindow = indicator
+    }
+
+    private func adjustSelectionForRecording(_ selection: CaptureSelection) -> CaptureSelection {
+        let integralRect = selection.rect.integral
+        var width = Int(integralRect.width)
+        var height = Int(integralRect.height)
+
+        // H.264/HEVC can require dimensions aligned to 16. Clamp down to nearest multiple of 16.
+        let adjustedWidth = max((width / 16) * 16, 16)
+        let adjustedHeight = max((height / 16) * 16, 16)
+
+        let adjustedRect = CGRect(
+            x: integralRect.origin.x,
+            y: integralRect.origin.y,
+            width: CGFloat(adjustedWidth),
+            height: CGFloat(adjustedHeight)
+        )
+
+        if adjustedRect != selection.rect {
+            NSLog("[RecordingManager] Adjusted selection rect for recording: %@ -> %@", NSStringFromRect(selection.rect), NSStringFromRect(adjustedRect))
+        }
+
+        return CaptureSelection(
+            rect: adjustedRect,
+            displayID: selection.displayID,
+            scaleFactor: selection.scaleFactor
+        )
     }
 
     private func handleStreamError(_ error: Error) {

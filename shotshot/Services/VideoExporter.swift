@@ -53,7 +53,12 @@ struct VideoExporter {
         formatPicker.action = #selector(FormatPickerTarget.formatChanged(_:))
         FormatPickerTarget.shared.panel = panel
 
-        let response = await panel.beginSheetModal(for: NSApp.keyWindow ?? NSApp.mainWindow ?? NSWindow())
+        // シートではなく独立したダイアログとして表示（親ウィンドウがない場合の問題を回避）
+        let response = await withCheckedContinuation { continuation in
+            panel.begin { response in
+                continuation.resume(returning: response)
+            }
+        }
 
         guard response == .OK, let url = panel.url else {
             // キャンセル時は一時ファイル削除

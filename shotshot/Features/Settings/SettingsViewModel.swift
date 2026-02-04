@@ -5,6 +5,7 @@ import SwiftUI
 
 extension Notification.Name {
     static let hotkeySettingsChanged = Notification.Name("hotkeySettingsChanged")
+    static let timerSettingsChanged = Notification.Name("timerSettingsChanged")
 }
 
 @Observable
@@ -18,6 +19,13 @@ final class SettingsViewModel {
 
     var copyToClipboard: Bool {
         didSet { settings.copyToClipboard = copyToClipboard }
+    }
+
+    var timerSeconds: Int {
+        didSet {
+            settings.timerSeconds = timerSeconds
+            NotificationCenter.default.post(name: .timerSettingsChanged, object: nil)
+        }
     }
 
     var useControl: Bool = true
@@ -42,6 +50,7 @@ final class SettingsViewModel {
     init() {
         self.savePath = settings.savePath
         self.copyToClipboard = settings.copyToClipboard
+        self.timerSeconds = settings.timerSeconds
 
         let modifiers = settings.hotkeyModifiers
         self.useControl = modifiers & UInt32(NSEvent.ModifierFlags.control.rawValue) != 0

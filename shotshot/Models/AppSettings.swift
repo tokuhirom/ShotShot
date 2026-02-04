@@ -15,6 +15,7 @@ final class AppSettings {
         static let hotkeyKeyCode = "hotkeyKeyCode"
         static let copyToClipboard = "copyToClipboard"
         static let defaultAnnotationColor = "defaultAnnotationColor"
+        static let timerSeconds = "timerSeconds"
         // Editor settings
         static let selectedTool = "selectedTool"
         static let selectedColorRed = "selectedColorRed"
@@ -44,6 +45,10 @@ final class AppSettings {
 
     var copyToClipboard: Bool = true {
         didSet { defaults.set(copyToClipboard, forKey: Keys.copyToClipboard) }
+    }
+
+    var timerSeconds: Int = 3 {
+        didSet { defaults.set(timerSeconds, forKey: Keys.timerSeconds) }
     }
 
     // MARK: - Editor Settings
@@ -87,11 +92,13 @@ final class AppSettings {
         let storedModifiers = UInt32(defaults.integer(forKey: Keys.hotkeyModifiers))
         let storedKeyCode = UInt32(defaults.integer(forKey: Keys.hotkeyKeyCode))
         let storedClipboard = defaults.object(forKey: Keys.copyToClipboard) as? Bool ?? true
+        let storedTimerSeconds = defaults.integer(forKey: Keys.timerSeconds)
 
         self.savePath = storedSavePath
         self.hotkeyModifiers = storedModifiers != 0 ? storedModifiers : UInt32(NSEvent.ModifierFlags.control.rawValue | NSEvent.ModifierFlags.shift.rawValue)
         self.hotkeyKeyCode = storedKeyCode != 0 ? storedKeyCode : 21  // "4" key
         self.copyToClipboard = storedClipboard
+        self.timerSeconds = storedTimerSeconds > 0 ? storedTimerSeconds : 3
 
         // Load editor settings
         self.selectedToolName = defaults.string(forKey: Keys.selectedTool) ?? "select"

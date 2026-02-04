@@ -11,6 +11,7 @@ final class MenuBarManager {
     private let onSettings: () -> Void
     private let onQuit: () -> Void
     private var recordMenuItem: NSMenuItem?
+    private var timerMenuItem: NSMenuItem?
 
     init(
         onCapture: @escaping () -> Void,
@@ -45,11 +46,13 @@ final class MenuBarManager {
         captureItem.keyEquivalent = "4"
         menu.addItem(captureItem)
 
-        let timerCaptureItem = NSMenuItem(title: "タイマーで撮る (3秒)", action: #selector(timerCaptureAction), keyEquivalent: "")
+        let timerSeconds = AppSettings.shared.timerSeconds
+        let timerCaptureItem = NSMenuItem(title: "タイマーで撮る (\(timerSeconds)秒)", action: #selector(timerCaptureAction), keyEquivalent: "")
         timerCaptureItem.target = self
         timerCaptureItem.keyEquivalentModifierMask = [.control, .shift]
         timerCaptureItem.keyEquivalent = "5"
         menu.addItem(timerCaptureItem)
+        self.timerMenuItem = timerCaptureItem
 
         let recordItem = NSMenuItem(title: "画面を録画する", action: #selector(recordAction), keyEquivalent: "")
         recordItem.target = self
@@ -101,6 +104,10 @@ final class MenuBarManager {
         } else {
             recordMenuItem?.title = "画面を録画する"
         }
+    }
+
+    func updateTimerSeconds(_ seconds: Int) {
+        timerMenuItem?.title = "タイマーで撮る (\(seconds)秒)"
     }
 
     @objc private func openSaveFolderAction() {

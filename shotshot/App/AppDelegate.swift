@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setupRecordingManager()
         setupKeyEventMonitor()
         setupHotkeyChangeObserver()
+        setupTimerSettingsObserver()
     }
 
     private func setupHotkeyChangeObserver() {
@@ -30,6 +31,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             Task { @MainActor in
                 self?.hotkeyManager?.reregister()
             }
+        }
+    }
+
+    private func setupTimerSettingsObserver() {
+        NotificationCenter.default.addObserver(
+            forName: .timerSettingsChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            let seconds = AppSettings.shared.timerSeconds
+            self?.menuBarManager?.updateTimerSeconds(seconds)
         }
     }
 
@@ -147,9 +159,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return
         }
 
+        let countdownSeconds = AppSettings.shared.timerSeconds
         print("[shotshot] Starting timer capture...")
         do {
-            let screenshot = try await captureManager.captureWithTimer(countdownSeconds: 3)
+            let screenshot = try await captureManager.captureWithTimer(countdownSeconds: countdownSeconds)
             print("[shotshot] Timer capture completed, showing editor...")
             showEditor(with: screenshot)
         } catch CaptureError.cancelled {

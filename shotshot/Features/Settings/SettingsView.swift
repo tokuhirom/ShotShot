@@ -35,6 +35,14 @@ struct GeneralSettingsView: View {
                 }
 
                 Toggle("保存時にクリップボードにもコピー", isOn: $viewModel.copyToClipboard)
+
+                HStack {
+                    Text("タイマー秒数")
+                    Stepper(value: $viewModel.timerSeconds, in: 1...10) {
+                        Text("\(viewModel.timerSeconds) 秒")
+                            .monospacedDigit()
+                    }
+                }
             }
         }
         .padding()

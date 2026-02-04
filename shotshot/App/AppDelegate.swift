@@ -40,8 +40,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            let seconds = AppSettings.shared.timerSeconds
-            self?.menuBarManager?.updateTimerSeconds(seconds)
+            Task { @MainActor in
+                let seconds = AppSettings.shared.timerSeconds
+                self?.menuBarManager?.updateTimerSeconds(seconds)
+            }
         }
     }
 

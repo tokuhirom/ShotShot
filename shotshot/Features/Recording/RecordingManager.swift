@@ -271,8 +271,8 @@ final class RecordingManager: NSObject {
 
     private func adjustSelectionForRecording(_ selection: CaptureSelection) -> CaptureSelection {
         let integralRect = selection.rect.integral
-        var width = Int(integralRect.width)
-        var height = Int(integralRect.height)
+        let width = Int(integralRect.width)
+        let height = Int(integralRect.height)
 
         // H.264/HEVC can require dimensions aligned to 16. Clamp down to nearest multiple of 16.
         let adjustedWidth = max((width / 16) * 16, 16)

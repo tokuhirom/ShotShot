@@ -11,13 +11,14 @@ enum CaptureError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            return "画面収録の許可が必要です"
+            return NSLocalizedString("capture.error.permission_denied", comment: "")
         case .noDisplayFound:
-            return "ディスプレイが見つかりません"
+            return NSLocalizedString("capture.error.no_display", comment: "")
         case .captureFailedError(let message):
-            return "キャプチャに失敗しました: \(message)"
+            let format = NSLocalizedString("capture.error.capture_failed_format", comment: "")
+            return String.localizedStringWithFormat(format, message)
         case .cancelled:
-            return "キャンセルされました"
+            return NSLocalizedString("capture.error.cancelled", comment: "")
         }
     }
 }

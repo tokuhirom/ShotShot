@@ -233,7 +233,8 @@ final class ScrollCaptureIndicatorView: NSView {
 
     func updateCaptureCount(_ count: Int) {
         captureCount = count
-        countLabel.stringValue = "Captures: \(count)"
+        let format = NSLocalizedString("scroll.capture_count_format", comment: "")
+        countLabel.stringValue = String.localizedStringWithFormat(format, count)
         countLabel.sizeToFit()
         needsLayout = true
         needsDisplay = true
@@ -270,7 +271,7 @@ final class ScrollCaptureIndicatorView: NSView {
     func showProcessing() {
         isProcessing = true
         doneButton.isEnabled = false
-        countLabel.stringValue = "画像を結合中..."
+        countLabel.stringValue = NSLocalizedString("scroll.processing", comment: "")
         hintLabel.stringValue = ""
         needsLayout = true
         needsDisplay = true

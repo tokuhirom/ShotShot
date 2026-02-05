@@ -78,3 +78,13 @@ shotshot/
  - [x] Cmd-V to open image from clipboard for editing
  - [x] Cmd-C to copy to clipboard
  - [x] Make select and arrow icons more distinguishable
+
+## Localization Guidelines
+
+- Base language is English. All user-facing strings must be defined in `shotshot/Resources/en.lproj/Localizable.strings` and translated in `shotshot/Resources/ja.lproj/Localizable.strings`.
+- Do not hardcode user-facing strings in code. Use localization keys.
+- SwiftUI: `Text("key")`, `Label("key", systemImage: ...)`, `Button("key")`
+- AppKit/Foundation: `NSLocalizedString("key", comment: "")`
+- For formatted strings, use `String.localizedStringWithFormat` with a localized format string.
+- Localize usage descriptions via `InfoPlist.strings` in `en.lproj` and `ja.lproj`.
+

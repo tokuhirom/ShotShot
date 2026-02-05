@@ -7,12 +7,12 @@ struct SettingsView: View {
         TabView {
             GeneralSettingsView(viewModel: viewModel)
                 .tabItem {
-                    Label("一般", systemImage: "gear")
+                    Label("settings.tab.general", systemImage: "gear")
                 }
 
             HotkeySettingsView(viewModel: viewModel)
                 .tabItem {
-                    Label("ショートカット", systemImage: "keyboard")
+                    Label("settings.tab.shortcuts", systemImage: "keyboard")
                 }
         }
         .frame(minWidth: 400, minHeight: 200)
@@ -26,20 +26,21 @@ struct GeneralSettingsView: View {
         Form {
             Section {
                 HStack {
-                    TextField("保存先", text: $viewModel.savePath)
+                    TextField("settings.save_path", text: $viewModel.savePath)
                         .textFieldStyle(.roundedBorder)
 
-                    Button("選択...") {
+                    Button("settings.choose") {
                         viewModel.selectSaveDirectory()
                     }
                 }
 
-                Toggle("保存時にクリップボードにもコピー", isOn: $viewModel.copyToClipboard)
+                Toggle("settings.copy_to_clipboard", isOn: $viewModel.copyToClipboard)
 
                 HStack {
-                    Text("タイマー秒数")
+                    Text("settings.timer_seconds")
                     Stepper(value: $viewModel.timerSeconds, in: 1...10) {
-                        Text("\(viewModel.timerSeconds) 秒")
+                        let format = NSLocalizedString("settings.timer_seconds_value_format", comment: "")
+                        Text(String.localizedStringWithFormat(format, viewModel.timerSeconds))
                             .monospacedDigit()
                     }
                 }
@@ -54,24 +55,24 @@ struct HotkeySettingsView: View {
 
     var body: some View {
         Form {
-            Section("キャプチャのショートカット") {
+            Section("settings.shortcuts_section") {
                 VStack(alignment: .leading, spacing: 12) {
                     // Modifier keys (split into two rows)
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("修飾キー:")
+                        Text("settings.modifier_keys")
                             .font(.caption)
                             .foregroundColor(.secondary)
 
                         HStack(spacing: 16) {
-                            Toggle("⌃ Control", isOn: $viewModel.useControl)
+                            Toggle("settings.modifier.control", isOn: $viewModel.useControl)
                                 .toggleStyle(.checkbox)
-                            Toggle("⇧ Shift", isOn: $viewModel.useShift)
+                            Toggle("settings.modifier.shift", isOn: $viewModel.useShift)
                                 .toggleStyle(.checkbox)
                         }
                         HStack(spacing: 16) {
-                            Toggle("⌥ Option", isOn: $viewModel.useOption)
+                            Toggle("settings.modifier.option", isOn: $viewModel.useOption)
                                 .toggleStyle(.checkbox)
-                            Toggle("⌘ Command", isOn: $viewModel.useCommand)
+                            Toggle("settings.modifier.command", isOn: $viewModel.useCommand)
                                 .toggleStyle(.checkbox)
                         }
                     }
@@ -80,7 +81,7 @@ struct HotkeySettingsView: View {
 
                     // Key input
                     HStack {
-                        Text("キー:")
+                        Text("settings.key")
                             .font(.caption)
                             .foregroundColor(.secondary)
 
@@ -88,14 +89,14 @@ struct HotkeySettingsView: View {
                             .frame(width: 50)
                             .textFieldStyle(.roundedBorder)
 
-                        Text("(例: 4, S, A など)")
+                        Text("settings.key_example")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
 
                     // Current shortcut display
                     HStack {
-                        Text("現在:")
+                        Text("settings.current")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Text(viewModel.currentHotkeyDisplay)
@@ -109,7 +110,7 @@ struct HotkeySettingsView: View {
                     Divider()
 
                     HStack {
-                        Button("ホットキーを更新") {
+                        Button("settings.update_hotkey") {
                             viewModel.updateHotkey()
                         }
                         .buttonStyle(.borderedProminent)

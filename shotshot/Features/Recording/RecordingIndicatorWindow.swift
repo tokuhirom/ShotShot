@@ -121,7 +121,7 @@ final class RecordingIndicatorView: NSView {
         self.padding = padding
 
         // REC label
-        recLabel = NSTextField(labelWithString: "● REC")
+        recLabel = NSTextField(labelWithString: NSLocalizedString("recording.indicator.rec", comment: ""))
         recLabel.font = NSFont.boldSystemFont(ofSize: 13)
         recLabel.textColor = .white
         recLabel.backgroundColor = .clear
@@ -139,7 +139,10 @@ final class RecordingIndicatorView: NSView {
         // Stop button
         stopButton = NSButton(frame: .zero)
         stopButton.bezelStyle = .circular
-        stopButton.image = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: "録画を停止")
+        stopButton.image = NSImage(
+            systemSymbolName: "stop.fill",
+            accessibilityDescription: NSLocalizedString("recording.indicator.stop_accessibility", comment: "")
+        )
         stopButton.imagePosition = .imageOnly
         stopButton.isBordered = false
         stopButton.contentTintColor = .white

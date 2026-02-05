@@ -83,7 +83,7 @@ final class SettingsViewModel {
         if useCommand { modifiers |= UInt32(NSEvent.ModifierFlags.command.rawValue) }
 
         guard let keyCode = stringToKeyCode(hotkeyKey) else {
-            hotkeyStatus = "無効なキーです"
+            hotkeyStatus = NSLocalizedString("settings.hotkey_invalid", comment: "")
             hotkeyStatusIsError = true
             return
         }
@@ -94,7 +94,7 @@ final class SettingsViewModel {
         // Re-register hotkey immediately
         NotificationCenter.default.post(name: .hotkeySettingsChanged, object: nil)
 
-        hotkeyStatus = "ホットキーを更新しました"
+        hotkeyStatus = NSLocalizedString("settings.hotkey_updated", comment: "")
         hotkeyStatusIsError = false
     }
 

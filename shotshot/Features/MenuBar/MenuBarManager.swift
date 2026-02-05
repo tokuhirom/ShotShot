@@ -13,6 +13,7 @@ final class MenuBarManager {
     private let onQuit: () -> Void
     private var recordMenuItem: NSMenuItem?
     private var timerMenuItem: NSMenuItem?
+    private var isRecordingActive: Bool = false
 
     init(
         onCapture: @escaping () -> Void,
@@ -37,33 +38,40 @@ final class MenuBarManager {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ShotShot")
+            button.image = NSImage(
+                systemSymbolName: "camera.viewfinder",
+                accessibilityDescription: NSLocalizedString("app.name", comment: "")
+            )
             button.image?.isTemplate = true
         }
 
         let menu = NSMenu()
 
-        let captureItem = NSMenuItem(title: "スクリーンショットを撮る", action: #selector(captureAction), keyEquivalent: "")
+        let captureItem = NSMenuItem(title: NSLocalizedString("menu.capture", comment: ""), action: #selector(captureAction), keyEquivalent: "")
         captureItem.target = self
         captureItem.keyEquivalentModifierMask = [.control, .shift]
         captureItem.keyEquivalent = "4"
         menu.addItem(captureItem)
 
         let timerSeconds = AppSettings.shared.timerSeconds
-        let timerCaptureItem = NSMenuItem(title: "タイマーで撮る (\(timerSeconds)秒)", action: #selector(timerCaptureAction), keyEquivalent: "")
+        let timerTitle = String.localizedStringWithFormat(
+            NSLocalizedString("menu.timer_capture_format", comment: ""),
+            timerSeconds
+        )
+        let timerCaptureItem = NSMenuItem(title: timerTitle, action: #selector(timerCaptureAction), keyEquivalent: "")
         timerCaptureItem.target = self
         timerCaptureItem.keyEquivalentModifierMask = [.control, .shift]
         timerCaptureItem.keyEquivalent = "5"
         menu.addItem(timerCaptureItem)
         self.timerMenuItem = timerCaptureItem
 
-        let scrollCaptureItem = NSMenuItem(title: "スクロールキャプチャ (Experimental)", action: #selector(scrollCaptureAction), keyEquivalent: "")
+        let scrollCaptureItem = NSMenuItem(title: NSLocalizedString("menu.scroll_capture", comment: ""), action: #selector(scrollCaptureAction), keyEquivalent: "")
         scrollCaptureItem.target = self
         scrollCaptureItem.keyEquivalentModifierMask = [.control, .shift]
         scrollCaptureItem.keyEquivalent = "7"
         menu.addItem(scrollCaptureItem)
 
-        let recordItem = NSMenuItem(title: "画面を録画する", action: #selector(recordAction), keyEquivalent: "")
+        let recordItem = NSMenuItem(title: NSLocalizedString("menu.record_start", comment: ""), action: #selector(recordAction), keyEquivalent: "")
         recordItem.target = self
         recordItem.keyEquivalentModifierMask = [.control, .shift]
         recordItem.keyEquivalent = "6"
@@ -72,19 +80,19 @@ final class MenuBarManager {
 
         menu.addItem(NSMenuItem.separator())
 
-        let openFolderItem = NSMenuItem(title: "保存先を開く", action: #selector(openSaveFolderAction), keyEquivalent: "")
+        let openFolderItem = NSMenuItem(title: NSLocalizedString("menu.open_save_folder", comment: ""), action: #selector(openSaveFolderAction), keyEquivalent: "")
         openFolderItem.target = self
         menu.addItem(openFolderItem)
 
         menu.addItem(NSMenuItem.separator())
 
-        let settingsItem = NSMenuItem(title: "設定...", action: #selector(settingsAction), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: NSLocalizedString("menu.settings", comment: ""), action: #selector(settingsAction), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
         menu.addItem(NSMenuItem.separator())
 
-        let quitItem = NSMenuItem(title: "ShotShot を終了", action: #selector(quitAction), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: NSLocalizedString("menu.quit", comment: ""), action: #selector(quitAction), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -104,7 +112,7 @@ final class MenuBarManager {
     }
 
     @objc private func recordAction() {
-        if recordMenuItem?.title == "録画を停止する" {
+        if isRecordingActive {
             onStopRecording()
         } else {
             onRecording()
@@ -112,15 +120,20 @@ final class MenuBarManager {
     }
 
     func updateRecordingState(isRecording: Bool) {
+        isRecordingActive = isRecording
         if isRecording {
-            recordMenuItem?.title = "録画を停止する"
+            recordMenuItem?.title = NSLocalizedString("menu.record_stop", comment: "")
         } else {
-            recordMenuItem?.title = "画面を録画する"
+            recordMenuItem?.title = NSLocalizedString("menu.record_start", comment: "")
         }
     }
 
     func updateTimerSeconds(_ seconds: Int) {
-        timerMenuItem?.title = "タイマーで撮る (\(seconds)秒)"
+        let title = String.localizedStringWithFormat(
+            NSLocalizedString("menu.timer_capture_format", comment: ""),
+            seconds
+        )
+        timerMenuItem?.title = title
     }
 
     @objc private func openSaveFolderAction() {

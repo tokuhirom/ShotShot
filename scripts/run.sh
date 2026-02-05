@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Usage: ./run.sh
+# Debug scroll capture: SHOTSHOT_SCROLL_DEBUG=1 ./run.sh
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 LOGS_DIR="$PROJECT_DIR/logs"
@@ -29,13 +32,21 @@ fi
 
 echo "Running: $APP_PATH"
 echo "Log file: $LOG_FILE"
+
+# Check for scroll capture debug mode
+if [ "$SHOTSHOT_SCROLL_DEBUG" = "1" ]; then
+    echo "Scroll capture debug mode: ENABLED"
+    echo "Debug images will be saved to: \$TMPDIR/ShotShot_Debug/"
+fi
+
 echo "---"
 
 # Record the latest crash log before launch
 BEFORE_CRASH=$(ls -t "$CRASH_LOGS_DIR" 2>/dev/null | grep -i shotshot | head -1)
 
 # Output to both console and file with tee (no buffering)
-"$APP_PATH/Contents/MacOS/ShotShot" 2>&1 | stdbuf -oL tee "$LOG_FILE"
+# Pass through environment variables including SHOTSHOT_SCROLL_DEBUG
+SHOTSHOT_SCROLL_DEBUG="$SHOTSHOT_SCROLL_DEBUG" "$APP_PATH/Contents/MacOS/ShotShot" 2>&1 | stdbuf -oL tee "$LOG_FILE"
 EXIT_CODE=${PIPESTATUS[0]}
 
 # Check whether the app crashed

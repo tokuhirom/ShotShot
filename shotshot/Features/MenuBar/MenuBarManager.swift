@@ -6,6 +6,7 @@ final class MenuBarManager {
     private var statusItem: NSStatusItem?
     private let onCapture: () -> Void
     private let onTimerCapture: () -> Void
+    private let onScrollCapture: () -> Void
     private let onRecording: () -> Void
     private let onStopRecording: () -> Void
     private let onSettings: () -> Void
@@ -16,6 +17,7 @@ final class MenuBarManager {
     init(
         onCapture: @escaping () -> Void,
         onTimerCapture: @escaping () -> Void,
+        onScrollCapture: @escaping () -> Void,
         onRecording: @escaping () -> Void,
         onStopRecording: @escaping () -> Void,
         onSettings: @escaping () -> Void,
@@ -23,6 +25,7 @@ final class MenuBarManager {
     ) {
         self.onCapture = onCapture
         self.onTimerCapture = onTimerCapture
+        self.onScrollCapture = onScrollCapture
         self.onRecording = onRecording
         self.onStopRecording = onStopRecording
         self.onSettings = onSettings
@@ -53,6 +56,12 @@ final class MenuBarManager {
         timerCaptureItem.keyEquivalent = "5"
         menu.addItem(timerCaptureItem)
         self.timerMenuItem = timerCaptureItem
+
+        let scrollCaptureItem = NSMenuItem(title: "スクロールキャプチャ (Experimental)", action: #selector(scrollCaptureAction), keyEquivalent: "")
+        scrollCaptureItem.target = self
+        scrollCaptureItem.keyEquivalentModifierMask = [.control, .shift]
+        scrollCaptureItem.keyEquivalent = "7"
+        menu.addItem(scrollCaptureItem)
 
         let recordItem = NSMenuItem(title: "画面を録画する", action: #selector(recordAction), keyEquivalent: "")
         recordItem.target = self
@@ -88,6 +97,10 @@ final class MenuBarManager {
 
     @objc private func timerCaptureAction() {
         onTimerCapture()
+    }
+
+    @objc private func scrollCaptureAction() {
+        onScrollCapture()
     }
 
     @objc private func recordAction() {

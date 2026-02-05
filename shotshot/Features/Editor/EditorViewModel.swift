@@ -310,7 +310,7 @@ final class EditorViewModel {
         redoStack.removeAll()
 
         cropRect = nil
-        statusMessage = "画像を切り抜きました"
+        statusMessage = NSLocalizedString("editor.status.cropped", comment: "")
     }
 
     func clearAnnotations() {
@@ -318,7 +318,7 @@ final class EditorViewModel {
         saveStateForUndo()
         annotations.removeAll()
         selectedAnnotationId = nil
-        statusMessage = "注釈をクリアしました"
+        statusMessage = NSLocalizedString("editor.status.cleared", comment: "")
     }
 
     func undo() {
@@ -326,7 +326,7 @@ final class EditorViewModel {
         redoStack.append(annotations)
         annotations = undoStack.removeLast()
         selectedAnnotationId = nil
-        statusMessage = "操作を取り消しました"
+        statusMessage = NSLocalizedString("editor.status.undo", comment: "")
     }
 
     func redo() {
@@ -334,7 +334,7 @@ final class EditorViewModel {
         undoStack.append(annotations)
         annotations = redoStack.removeLast()
         selectedAnnotationId = nil
-        statusMessage = "操作をやり直しました"
+        statusMessage = NSLocalizedString("editor.status.redo", comment: "")
     }
 
     // MARK: - Selection & Move
@@ -404,7 +404,7 @@ final class EditorViewModel {
         saveStateForUndo()
         annotations.remove(at: index)
         selectedAnnotationId = nil
-        statusMessage = "注釈を削除しました"
+        statusMessage = NSLocalizedString("editor.status.deleted", comment: "")
     }
 
     private func annotationContainsPoint(_ annotation: Annotation, _ point: CGPoint) -> Bool {
@@ -461,7 +461,7 @@ final class EditorViewModel {
     func copyToClipboard() {
         let finalImage = renderFinalImage()
         ClipboardService.copy(finalImage)
-        statusMessage = "クリップボードにコピーしました"
+        statusMessage = NSLocalizedString("editor.status.copied", comment: "")
     }
 
     func done() {
@@ -505,13 +505,15 @@ final class EditorViewModel {
                 guard let tiffData = finalImage.tiffRepresentation,
                       let bitmap = NSBitmapImageRep(data: tiffData),
                       let pngData = bitmap.representation(using: .png, properties: [:]) else {
-                    statusMessage = "画像の変換に失敗しました"
+                    statusMessage = NSLocalizedString("editor.status.convert_failed", comment: "")
                     return
                 }
                 try pngData.write(to: url)
-                statusMessage = "保存しました: \(url.lastPathComponent)"
+                let format = NSLocalizedString("editor.status.saved_format", comment: "")
+                statusMessage = String.localizedStringWithFormat(format, url.lastPathComponent)
             } catch {
-                statusMessage = "保存に失敗しました: \(error.localizedDescription)"
+                let format = NSLocalizedString("editor.status.save_failed_format", comment: "")
+                statusMessage = String.localizedStringWithFormat(format, error.localizedDescription)
             }
         }
     }

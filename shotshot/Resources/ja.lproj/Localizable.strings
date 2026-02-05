@@ -1,0 +1,116 @@
+/* Common */
+"common.ok" = "OK";
+"common.cancel" = "キャンセル";
+"common.done" = "完了";
+
+/* App */
+"app.name" = "ShotShot";
+"app.settings_title" = "ShotShot 設定";
+
+/* Permission */
+"permission.screen_recording.title" = "画面収録の許可が必要です";
+"permission.screen_recording.message" = "システム設定 > プライバシーとセキュリティ > 画面収録 から ShotShot を許可してください。";
+"permission.open_system_settings" = "システム設定を開く";
+
+/* Errors */
+"error.generic.title" = "エラーが発生しました";
+
+/* Export */
+"export.image.failed_create_directory" = "保存先フォルダの作成に失敗しました";
+"export.image.failed_create_image_data" = "画像データの作成に失敗しました";
+"export.image.failed_write_file" = "ファイルの書き込みに失敗しました";
+"export.video.save_title" = "録画を保存";
+"export.video.format_label" = "フォーマット:";
+"export.video.save_failed" = "保存に失敗しました";
+"export.video.gif_creation_failed" = "GIFファイルの作成に失敗しました";
+"export.video.gif_write_failed" = "GIFファイルの書き出しに失敗しました";
+
+/* Capture */
+"capture.error.permission_denied" = "画面収録の許可が必要です";
+"capture.error.no_display" = "ディスプレイが見つかりません";
+"capture.error.capture_failed_format" = "キャプチャに失敗しました: %@";
+"capture.error.cancelled" = "キャンセルされました";
+
+/* Recording */
+"recording.error.already_recording" = "すでに録画中です";
+"recording.error.no_display" = "ディスプレイが見つかりません";
+"recording.error.writer_setup_failed_format" = "録画の準備に失敗しました: %@";
+"recording.error.stream_failed_format" = "録画エラー: %@";
+"recording.error.cannot_add_input" = "録画の入力を追加できませんでした";
+"recording.error.start_writing_failed" = "書き込みの開始に失敗しました";
+"recording.error.writer_finalization_failed" = "書き込みの終了処理に失敗しました";
+"recording.error.writer_not_writing" = "書き込みが開始されていません";
+"recording.indicator.rec" = "● REC";
+"recording.indicator.stop_accessibility" = "録画を停止";
+
+/* Menu */
+"menu.capture" = "スクリーンショットを撮る";
+"menu.timer_capture_format" = "タイマーで撮る（%d秒）";
+"menu.scroll_capture" = "スクロールキャプチャ (Experimental)";
+"menu.record_start" = "画面を録画する";
+"menu.record_stop" = "録画を停止する";
+"menu.open_save_folder" = "保存先を開く";
+"menu.settings" = "設定...";
+"menu.quit" = "ShotShot を終了";
+
+/* Settings */
+"settings.tab.general" = "一般";
+"settings.tab.shortcuts" = "ショートカット";
+"settings.save_path" = "保存先";
+"settings.choose" = "選択...";
+"settings.copy_to_clipboard" = "保存時にクリップボードにもコピー";
+"settings.timer_seconds" = "タイマー秒数";
+"settings.timer_seconds_value_format" = "%d 秒";
+"settings.shortcuts_section" = "キャプチャのショートカット";
+"settings.modifier_keys" = "修飾キー:";
+"settings.modifier.control" = "⌃ Control";
+"settings.modifier.shift" = "⇧ Shift";
+"settings.modifier.option" = "⌥ Option";
+"settings.modifier.command" = "⌘ Command";
+"settings.key" = "キー:";
+"settings.key_example" = "(例: 4, S, A など)";
+"settings.current" = "現在:";
+"settings.update_hotkey" = "ホットキーを更新";
+"settings.hotkey_invalid" = "無効なキーです";
+"settings.hotkey_updated" = "ホットキーを更新しました";
+
+/* Editor */
+"editor.line_width" = "太さ";
+"editor.rounded" = "角丸";
+"editor.square" = "角張り";
+"editor.apply_crop" = "適用";
+"editor.crop_drag_hint" = "ドラッグして切り抜き領域を選択";
+"editor.undo_help" = "取り消し (⌘Z)";
+"editor.redo_help" = "やり直し (⇧⌘Z)";
+"editor.clear_annotations" = "クリア";
+"editor.custom_color" = "カスタム色";
+"editor.status.cropped" = "画像を切り抜きました";
+"editor.status.cleared" = "注釈をクリアしました";
+"editor.status.undo" = "操作を取り消しました";
+"editor.status.redo" = "操作をやり直しました";
+"editor.status.deleted" = "注釈を削除しました";
+"editor.status.copied" = "クリップボードにコピーしました";
+"editor.status.convert_failed" = "画像の変換に失敗しました";
+"editor.status.saved_format" = "保存しました: %@";
+"editor.status.save_failed_format" = "保存に失敗しました: %@";
+"editor.color.pink" = "ピンク";
+"editor.color.red" = "赤";
+"editor.color.orange" = "オレンジ";
+"editor.color.yellow" = "黄";
+"editor.color.green" = "緑";
+"editor.color.blue" = "青";
+"editor.color.white" = "白";
+"editor.color.black" = "黒";
+"tool.select" = "選択";
+"tool.crop" = "切り抜き";
+"tool.arrow" = "矢印";
+"tool.rectangle" = "四角";
+"tool.text" = "テキスト";
+"tool.mosaic" = "モザイク";
+"mosaic.pixelate_fine" = "モザイク（細）";
+"mosaic.pixelate_coarse" = "モザイク（粗）";
+"mosaic.blur" = "ぼかし";
+
+/* Scroll Capture */
+"scroll.capture_count_format" = "キャプチャ数: %d";
+"scroll.processing" = "画像を結合中...";

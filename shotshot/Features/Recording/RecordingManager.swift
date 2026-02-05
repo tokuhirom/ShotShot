@@ -12,13 +12,15 @@ enum RecordingError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyRecording:
-            return "すでに録画中です"
+            return NSLocalizedString("recording.error.already_recording", comment: "")
         case .noDisplay:
-            return "ディスプレイが見つかりません"
+            return NSLocalizedString("recording.error.no_display", comment: "")
         case .writerSetupFailed(let msg):
-            return "録画の準備に失敗しました: \(msg)"
+            let format = NSLocalizedString("recording.error.writer_setup_failed_format", comment: "")
+            return String.localizedStringWithFormat(format, msg)
         case .streamFailed(let msg):
-            return "録画エラー: \(msg)"
+            let format = NSLocalizedString("recording.error.stream_failed_format", comment: "")
+            return String.localizedStringWithFormat(format, msg)
         }
     }
 }
@@ -97,7 +99,9 @@ final class RecordingManager: NSObject {
         input.expectsMediaDataInRealTime = false
 
         guard writer.canAdd(input) else {
-            throw RecordingError.writerSetupFailed("Cannot add video input to writer")
+            throw RecordingError.writerSetupFailed(
+                NSLocalizedString("recording.error.cannot_add_input", comment: "")
+            )
         }
         writer.add(input)
 
@@ -115,7 +119,9 @@ final class RecordingManager: NSObject {
         self.videoInput = input
 
         if !writer.startWriting() {
-            let error = writer.error ?? RecordingError.writerSetupFailed("startWriting failed without error")
+            let error = writer.error ?? RecordingError.writerSetupFailed(
+                NSLocalizedString("recording.error.start_writing_failed", comment: "")
+            )
             NSLog("[RecordingManager] startWriting failed: %@", error.localizedDescription)
             throw error
         }
@@ -204,11 +210,15 @@ final class RecordingManager: NSObject {
             if writer.status == .completed, let url = tempFileURL {
                 stopContinuation?.resume(returning: url)
             } else {
-                let error = writer.error ?? RecordingError.writerSetupFailed("Writer finalization failed")
+                let error = writer.error ?? RecordingError.writerSetupFailed(
+                    NSLocalizedString("recording.error.writer_finalization_failed", comment: "")
+                )
                 stopContinuation?.resume(throwing: error)
             }
         } else {
-            let error = RecordingError.writerSetupFailed("Writer not in writing state")
+            let error = RecordingError.writerSetupFailed(
+                NSLocalizedString("recording.error.writer_not_writing", comment: "")
+            )
             stopContinuation?.resume(throwing: error)
         }
 

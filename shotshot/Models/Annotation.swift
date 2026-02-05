@@ -15,9 +15,9 @@ enum MosaicType: String, CaseIterable, Sendable {
 
     var displayName: String {
         switch self {
-        case .pixelateFine: return "モザイク（細）"
-        case .pixelateCoarse: return "モザイク（粗）"
-        case .blur: return "ぼかし"
+        case .pixelateFine: return NSLocalizedString("mosaic.pixelate_fine", comment: "")
+        case .pixelateCoarse: return NSLocalizedString("mosaic.pixelate_coarse", comment: "")
+        case .blur: return NSLocalizedString("mosaic.blur", comment: "")
         }
     }
 

@@ -30,6 +30,8 @@
 		A1000001212E4B0000000020 /* ImageExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000020 /* ImageExporter.swift */; };
 		A1000001212E4B0000000021 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000021 /* HotkeyManager.swift */; };
 		A1000001212E4B0000000022 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000022 /* Assets.xcassets */; };
+		70FA196C98994890B9C99B9B /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8219925AE8344232AA2AEF30 /* Localizable.strings */; };
+		807CB282401F43B8A84A1094 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CB440A7B72764EF099D67930 /* InfoPlist.strings */; };
 		A1000001212E4B0000000030 /* RecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000030 /* RecordingManager.swift */; };
 		A1000001212E4B0000000031 /* RecordingStreamOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000031 /* RecordingStreamOutput.swift */; };
 		A1000001212E4B0000000032 /* RecordingIndicatorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001212E4A0000000032 /* RecordingIndicatorWindow.swift */; };
@@ -66,6 +68,10 @@
 		A1000001212E4A0000000022 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000001212E4A0000000023 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000001212E4A0000000024 /* shotshot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = shotshot.entitlements; sourceTree = "<group>"; };
+		38A1641E5FC4484194ACD2C1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		FADD5CB2E00240F0A7AF42E4 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		3C07379B006E41A98C3B3AEA /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		14F9C2493B9E466284A5B8C6 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		A1000001212E4A0000000030 /* RecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingManager.swift; sourceTree = "<group>"; };
 		A1000001212E4A0000000031 /* RecordingStreamOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingStreamOutput.swift; sourceTree = "<group>"; };
 		A1000001212E4A0000000032 /* RecordingIndicatorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIndicatorWindow.swift; sourceTree = "<group>"; };
@@ -236,11 +242,34 @@
 				A1000001212E4A0000000022 /* Assets.xcassets */,
 				A1000001212E4A0000000023 /* Info.plist */,
 				A1000001212E4A0000000024 /* shotshot.entitlements */,
+				8219925AE8344232AA2AEF30 /* Localizable.strings */,
+				CB440A7B72764EF099D67930 /* InfoPlist.strings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin PBXVariantGroup section */
+		8219925AE8344232AA2AEF30 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				38A1641E5FC4484194ACD2C1 /* en */,
+				FADD5CB2E00240F0A7AF42E4 /* ja */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		CB440A7B72764EF099D67930 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3C07379B006E41A98C3B3AEA /* en */,
+				14F9C2493B9E466284A5B8C6 /* ja */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin PBXNativeTarget section */
 		A1000001212E460000000001 /* shotshot */ = {
@@ -300,6 +329,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000001212E4B0000000022 /* Assets.xcassets in Resources */,
+				70FA196C98994890B9C99B9B /* Localizable.strings in Resources */,
+				807CB282401F43B8A84A1094 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -10,11 +10,11 @@ enum ExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .failedToCreateDirectory:
-            return "保存先フォルダの作成に失敗しました"
+            return NSLocalizedString("export.image.failed_create_directory", comment: "")
         case .failedToCreateImageData:
-            return "画像データの作成に失敗しました"
+            return NSLocalizedString("export.image.failed_create_image_data", comment: "")
         case .failedToWriteFile:
-            return "ファイルの書き込みに失敗しました"
+            return NSLocalizedString("export.image.failed_write_file", comment: "")
         }
     }
 }

@@ -302,7 +302,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "ShotShot 設定"
+        window.title = NSLocalizedString("app.settings_title", comment: "")
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()
         window.isReleasedWhenClosed = false
@@ -315,11 +315,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func showPermissionAlert() {
         let alert = NSAlert()
-        alert.messageText = "画面収録の許可が必要です"
-        alert.informativeText = "システム設定 > プライバシーとセキュリティ > 画面収録 から ShotShot を許可してください。"
+        alert.messageText = NSLocalizedString("permission.screen_recording.title", comment: "")
+        alert.informativeText = NSLocalizedString("permission.screen_recording.message", comment: "")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "システム設定を開く")
-        alert.addButton(withTitle: "キャンセル")
+        alert.addButton(withTitle: NSLocalizedString("permission.open_system_settings", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("common.cancel", comment: ""))
 
         if alert.runModal() == .alertFirstButtonReturn {
             if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
@@ -330,10 +330,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func showErrorAlert(error: Error) {
         let alert = NSAlert()
-        alert.messageText = "エラーが発生しました"
+        alert.messageText = NSLocalizedString("error.generic.title", comment: "")
         alert.informativeText = error.localizedDescription
         alert.alertStyle = .critical
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: NSLocalizedString("common.ok", comment: ""))
         alert.runModal()
     }
 }

@@ -40,14 +40,14 @@ struct EditorWindow: View {
     }
 
     private static let presetColors: [(String, NSColor)] = [
-        ("ピンク", NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0)),
-        ("赤", NSColor(red: 1.0, green: 0.23, blue: 0.19, alpha: 1.0)),
-        ("オレンジ", NSColor(red: 1.0, green: 0.58, blue: 0.0, alpha: 1.0)),
-        ("黄", NSColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0)),
-        ("緑", NSColor(red: 0.3, green: 0.85, blue: 0.39, alpha: 1.0)),
-        ("青", NSColor(red: 0.0, green: 0.48, blue: 1.0, alpha: 1.0)),
-        ("白", NSColor.white),
-        ("黒", NSColor.black)
+        (NSLocalizedString("editor.color.pink", comment: ""), NSColor(red: 0.98, green: 0.22, blue: 0.53, alpha: 1.0)),
+        (NSLocalizedString("editor.color.red", comment: ""), NSColor(red: 1.0, green: 0.23, blue: 0.19, alpha: 1.0)),
+        (NSLocalizedString("editor.color.orange", comment: ""), NSColor(red: 1.0, green: 0.58, blue: 0.0, alpha: 1.0)),
+        (NSLocalizedString("editor.color.yellow", comment: ""), NSColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0)),
+        (NSLocalizedString("editor.color.green", comment: ""), NSColor(red: 0.3, green: 0.85, blue: 0.39, alpha: 1.0)),
+        (NSLocalizedString("editor.color.blue", comment: ""), NSColor(red: 0.0, green: 0.48, blue: 1.0, alpha: 1.0)),
+        (NSLocalizedString("editor.color.white", comment: ""), NSColor.white),
+        (NSLocalizedString("editor.color.black", comment: ""), NSColor.black)
     ]
 
     private static let fontSizes: [CGFloat] = [16, 24, 32, 48, 64, 80, 96]
@@ -99,10 +99,12 @@ struct EditorWindow: View {
                             .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.bordered)
-                    .help(viewModel.useRoundedCorners ? "角丸" : "角張り")
+                    .help(viewModel.useRoundedCorners
+                        ? NSLocalizedString("editor.rounded", comment: "")
+                        : NSLocalizedString("editor.square", comment: ""))
 
                     HStack(spacing: 4) {
-                        Text("太さ")
+                        Text("editor.line_width")
                             .font(.caption)
                         Slider(value: $viewModel.lineWidth, in: 1...20)
                             .frame(width: 80)
@@ -112,17 +114,17 @@ struct EditorWindow: View {
                 // Crop: apply/cancel buttons
                 HStack(spacing: 8) {
                     if viewModel.cropRect != nil {
-                        Button("適用") {
+                        Button("editor.apply_crop") {
                             viewModel.applyCrop()
                         }
                         .buttonStyle(.borderedProminent)
 
-                        Button("キャンセル") {
+                        Button("common.cancel") {
                             viewModel.cancelCrop()
                         }
                         .buttonStyle(.bordered)
                     } else {
-                        Text("ドラッグして切り抜き領域を選択")
+                        Text("editor.crop_drag_hint")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -157,7 +159,7 @@ struct EditorWindow: View {
             } else {
                 // Others: line width only
                 HStack(spacing: 4) {
-                    Text("太さ")
+                    Text("editor.line_width")
                         .font(.caption)
                     Slider(value: $viewModel.lineWidth, in: 1...20)
                         .frame(width: 80)
@@ -174,7 +176,7 @@ struct EditorWindow: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(!viewModel.canUndo)
-                .help("取り消し (⌘Z)")
+                .help(NSLocalizedString("editor.undo_help", comment: ""))
 
                 Button(action: { viewModel.redo() }) {
                     Image(systemName: "arrow.uturn.forward")
@@ -182,13 +184,13 @@ struct EditorWindow: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(!viewModel.canRedo)
-                .help("やり直し (⇧⌘Z)")
+                .help(NSLocalizedString("editor.redo_help", comment: ""))
             }
 
             Divider()
                 .frame(height: 24)
 
-            Button("クリア") {
+            Button("editor.clear_annotations") {
                 viewModel.clearAnnotations()
             }
             .buttonStyle(.bordered)
@@ -261,12 +263,12 @@ struct EditorWindow: View {
 
             Spacer()
 
-            Button("キャンセル") {
+            Button("common.cancel") {
                 viewModel.cancel()
             }
             .buttonStyle(.bordered)
 
-            Button("Done") {
+            Button("common.done") {
                 viewModel.done()
             }
             .buttonStyle(.borderedProminent)
@@ -412,7 +414,7 @@ struct ColorPickerButton: View {
                 Divider()
 
                 // Custom color picker
-                ColorPicker("カスタム色", selection: Binding(
+                ColorPicker("editor.custom_color", selection: Binding(
                     get: { Color(nsColor: selectedColor) },
                     set: { selectedColor = NSColor($0) }
                 ))
@@ -468,12 +470,12 @@ enum ToolType: CaseIterable {
 
     var displayName: String {
         switch self {
-        case .select: return "選択"
-        case .crop: return "切り抜き"
-        case .arrow: return "矢印"
-        case .rectangle: return "四角"
-        case .text: return "テキスト"
-        case .mosaic: return "モザイク"
+        case .select: return NSLocalizedString("tool.select", comment: "")
+        case .crop: return NSLocalizedString("tool.crop", comment: "")
+        case .arrow: return NSLocalizedString("tool.arrow", comment: "")
+        case .rectangle: return NSLocalizedString("tool.rectangle", comment: "")
+        case .text: return NSLocalizedString("tool.text", comment: "")
+        case .mosaic: return NSLocalizedString("tool.mosaic", comment: "")
         }
     }
 }

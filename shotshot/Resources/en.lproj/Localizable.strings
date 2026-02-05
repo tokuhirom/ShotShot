@@ -1,0 +1,116 @@
+/* Common */
+"common.ok" = "OK";
+"common.cancel" = "Cancel";
+"common.done" = "Done";
+
+/* App */
+"app.name" = "ShotShot";
+"app.settings_title" = "ShotShot Settings";
+
+/* Permission */
+"permission.screen_recording.title" = "Screen Recording Permission Required";
+"permission.screen_recording.message" = "Please allow ShotShot in System Settings > Privacy & Security > Screen Recording.";
+"permission.open_system_settings" = "Open System Settings";
+
+/* Errors */
+"error.generic.title" = "An Error Occurred";
+
+/* Export */
+"export.image.failed_create_directory" = "Failed to create the destination folder.";
+"export.image.failed_create_image_data" = "Failed to create image data.";
+"export.image.failed_write_file" = "Failed to write the file.";
+"export.video.save_title" = "Save Recording";
+"export.video.format_label" = "Format:";
+"export.video.save_failed" = "Failed to Save";
+"export.video.gif_creation_failed" = "Failed to create the GIF file.";
+"export.video.gif_write_failed" = "Failed to write the GIF file.";
+
+/* Capture */
+"capture.error.permission_denied" = "Screen recording permission is required.";
+"capture.error.no_display" = "No display found.";
+"capture.error.capture_failed_format" = "Capture failed: %@";
+"capture.error.cancelled" = "Cancelled.";
+
+/* Recording */
+"recording.error.already_recording" = "Already recording.";
+"recording.error.no_display" = "No display found.";
+"recording.error.writer_setup_failed_format" = "Failed to prepare recording: %@";
+"recording.error.stream_failed_format" = "Recording error: %@";
+"recording.error.cannot_add_input" = "Cannot add video input to the writer.";
+"recording.error.start_writing_failed" = "Failed to start writing.";
+"recording.error.writer_finalization_failed" = "Writer finalization failed.";
+"recording.error.writer_not_writing" = "Writer is not in writing state.";
+"recording.indicator.rec" = "● REC";
+"recording.indicator.stop_accessibility" = "Stop Recording";
+
+/* Menu */
+"menu.capture" = "Take Screenshot";
+"menu.timer_capture_format" = "Capture with Timer (%d sec)";
+"menu.scroll_capture" = "Scroll Capture (Experimental)";
+"menu.record_start" = "Record Screen";
+"menu.record_stop" = "Stop Recording";
+"menu.open_save_folder" = "Open Save Folder";
+"menu.settings" = "Settings...";
+"menu.quit" = "Quit ShotShot";
+
+/* Settings */
+"settings.tab.general" = "General";
+"settings.tab.shortcuts" = "Shortcuts";
+"settings.save_path" = "Save Location";
+"settings.choose" = "Choose...";
+"settings.copy_to_clipboard" = "Also copy to clipboard when saving";
+"settings.timer_seconds" = "Timer seconds";
+"settings.timer_seconds_value_format" = "%d sec";
+"settings.shortcuts_section" = "Capture Shortcuts";
+"settings.modifier_keys" = "Modifier keys:";
+"settings.modifier.control" = "⌃ Control";
+"settings.modifier.shift" = "⇧ Shift";
+"settings.modifier.option" = "⌥ Option";
+"settings.modifier.command" = "⌘ Command";
+"settings.key" = "Key:";
+"settings.key_example" = "(e.g. 4, S, A)";
+"settings.current" = "Current:";
+"settings.update_hotkey" = "Update Hotkey";
+"settings.hotkey_invalid" = "Invalid key.";
+"settings.hotkey_updated" = "Hotkey updated.";
+
+/* Editor */
+"editor.line_width" = "Line width";
+"editor.rounded" = "Rounded";
+"editor.square" = "Square";
+"editor.apply_crop" = "Apply";
+"editor.crop_drag_hint" = "Drag to select a crop area";
+"editor.undo_help" = "Undo (⌘Z)";
+"editor.redo_help" = "Redo (⇧⌘Z)";
+"editor.clear_annotations" = "Clear";
+"editor.custom_color" = "Custom Color";
+"editor.status.cropped" = "Cropped the image.";
+"editor.status.cleared" = "Cleared annotations.";
+"editor.status.undo" = "Undid the action.";
+"editor.status.redo" = "Redid the action.";
+"editor.status.deleted" = "Deleted the annotation.";
+"editor.status.copied" = "Copied to clipboard.";
+"editor.status.convert_failed" = "Failed to convert the image.";
+"editor.status.saved_format" = "Saved: %@";
+"editor.status.save_failed_format" = "Save failed: %@";
+"editor.color.pink" = "Pink";
+"editor.color.red" = "Red";
+"editor.color.orange" = "Orange";
+"editor.color.yellow" = "Yellow";
+"editor.color.green" = "Green";
+"editor.color.blue" = "Blue";
+"editor.color.white" = "White";
+"editor.color.black" = "Black";
+"tool.select" = "Select";
+"tool.crop" = "Crop";
+"tool.arrow" = "Arrow";
+"tool.rectangle" = "Rectangle";
+"tool.text" = "Text";
+"tool.mosaic" = "Mosaic";
+"mosaic.pixelate_fine" = "Pixelate (Fine)";
+"mosaic.pixelate_coarse" = "Pixelate (Coarse)";
+"mosaic.blur" = "Blur";
+
+/* Scroll Capture */
+"scroll.capture_count_format" = "Captures: %d";
+"scroll.processing" = "Stitching images...";

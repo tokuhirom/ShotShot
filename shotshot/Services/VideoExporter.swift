@@ -28,7 +28,7 @@ enum VideoFormat: String, CaseIterable {
 struct VideoExporter {
     static func showSavePanel(tempMP4URL: URL) async {
         let panel = NSSavePanel()
-        panel.title = "録画を保存"
+        panel.title = NSLocalizedString("export.video.save_title", comment: "")
         panel.nameFieldStringValue = generateFilename()
         panel.canCreateDirectories = true
 
@@ -40,7 +40,7 @@ struct VideoExporter {
         formatPicker.selectItem(at: 0) // Default to MP4
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 250, height: 40))
-        let label = NSTextField(labelWithString: "フォーマット:")
+        let label = NSTextField(labelWithString: NSLocalizedString("export.video.format_label", comment: ""))
         label.frame = NSRect(x: 0, y: 8, width: 80, height: 22)
         formatPicker.frame = NSRect(x: 85, y: 6, width: 150, height: 28)
         accessoryView.addSubview(label)
@@ -92,10 +92,10 @@ struct VideoExporter {
             try? FileManager.default.removeItem(at: tempMP4URL)
 
             let alert = NSAlert()
-            alert.messageText = "保存に失敗しました"
+            alert.messageText = NSLocalizedString("export.video.save_failed", comment: "")
             alert.informativeText = error.localizedDescription
             alert.alertStyle = .critical
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: NSLocalizedString("common.ok", comment: ""))
             alert.runModal()
         }
     }
@@ -177,9 +177,9 @@ enum VideoExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .gifCreationFailed:
-            return "GIFファイルの作成に失敗しました"
+            return NSLocalizedString("export.video.gif_creation_failed", comment: "")
         case .gifFinalizationFailed:
-            return "GIFファイルの書き出しに失敗しました"
+            return NSLocalizedString("export.video.gif_write_failed", comment: "")
         }
     }
 }

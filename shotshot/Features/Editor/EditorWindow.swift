@@ -47,7 +47,7 @@ struct EditorWindow: View {
         ("緑", NSColor(red: 0.3, green: 0.85, blue: 0.39, alpha: 1.0)),
         ("青", NSColor(red: 0.0, green: 0.48, blue: 1.0, alpha: 1.0)),
         ("白", NSColor.white),
-        ("黒", NSColor.black),
+        ("黒", NSColor.black)
     ]
 
     private static let fontSizes: [CGFloat] = [16, 24, 32, 48, 64, 80, 96]

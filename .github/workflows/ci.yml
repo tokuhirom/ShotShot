@@ -7,6 +7,16 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+
+      - name: SwiftLint
+        run: swiftlint lint --strict
+
   build:
     runs-on: macos-15
     steps:

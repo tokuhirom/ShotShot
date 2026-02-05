@@ -89,14 +89,14 @@ struct AnnotationCanvas: View {
     @State private var displayText = ""  // Display text (updated during IME input)
     @State private var editingPosition: CGPoint = .zero  // Display coordinates
     @State private var editingImagePosition: CGPoint = .zero  // Image coordinates (fixed for expansion)
-    @State private var editingAnnotationId: UUID? = nil  // Editing text annotation ID (nil for new)
+    @State private var editingAnnotationId: UUID?  // Editing text annotation ID (nil for new)
     @State private var isDraggingAnnotation = false
     @State private var isResizingAnnotation = false
-    @State private var activeResizeHandle: ResizeHandle? = nil
+    @State private var activeResizeHandle: ResizeHandle?
     @State private var dragStartPoint: CGPoint = .zero
     @State private var lastClickTime: Date = .distantPast
     @State private var lastClickPoint: CGPoint = .zero
-    @State private var pendingSelectAnnotationId: UUID? = nil  // Click selection for drawing tools
+    @State private var pendingSelectAnnotationId: UUID?  // Click selection for drawing tools
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -304,7 +304,7 @@ struct AnnotationCanvas: View {
         }
 
         // If dragging on an existing annotation, switch to creating new after a threshold
-        if let _ = pendingSelectAnnotationId {
+        if pendingSelectAnnotationId != nil {
             let dragDistance = hypot(value.location.x - value.startLocation.x, value.location.y - value.startLocation.y)
             if dragDistance > 5 {
                 pendingSelectAnnotationId = nil

@@ -32,13 +32,13 @@ final class EditorViewModel {
     private var redoStack: [[Annotation]] = []
 
     // Selection state
-    var selectedAnnotationId: UUID? = nil
+    var selectedAnnotationId: UUID?
 
     // Crop state (kept in image coordinates)
-    var cropRect: CGRect? = nil
+    var cropRect: CGRect?
 
     // Editing text bounds (image coordinates) - for canvas expansion
-    var editingTextBounds: CGRect? = nil
+    var editingTextBounds: CGRect?
 
     var selectedColorBinding: Color {
         get { Color(nsColor: selectedColor) }
@@ -341,10 +341,8 @@ final class EditorViewModel {
 
     func hitTest(at point: CGPoint) -> Annotation? {
         // Check in reverse because newer annotations are on top
-        for annotation in annotations.reversed() {
-            if annotationContainsPoint(annotation, point) {
-                return annotation
-            }
+        for annotation in annotations.reversed() where annotationContainsPoint(annotation, point) {
+            return annotation
         }
         return nil
     }

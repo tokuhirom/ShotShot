@@ -79,7 +79,7 @@ final class RecordingManager: NSObject {
         let videoSettings: [String: Any] = [
             AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: videoWidth,
-            AVVideoHeightKey: videoHeight,
+            AVVideoHeightKey: videoHeight
         ]
 
         // Create format hint for BGRA input

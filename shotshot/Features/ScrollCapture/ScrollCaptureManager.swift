@@ -54,6 +54,17 @@ final class ScrollCaptureManager {
         capturedImages.append(initialImage)
         NSLog("[ScrollCaptureManager] Initial capture done")
 
+        // Convert selection rect from top-left origin (ScreenCaptureKit)
+        // to bottom-left origin (NSWindow) coordinate system
+        let screen = NSScreen.screens.first { $0.displayID == selection.displayID } ?? NSScreen.main!
+        let screenFrame = screen.frame
+        let selectionInScreen = NSRect(
+            x: screenFrame.origin.x + selection.rect.origin.x,
+            y: screenFrame.origin.y + screenFrame.height - selection.rect.origin.y - selection.rect.height,
+            width: selection.rect.width,
+            height: selection.rect.height
+        )
+
         // Show overlay and start scroll detection
         return try await withCheckedThrowingContinuation { [weak self] continuation in
             guard let self = self else {
@@ -61,8 +72,8 @@ final class ScrollCaptureManager {
                 return
             }
 
-            // Show overlay window
-            self.overlayWindow = ScrollCaptureOverlayWindow(selectionRect: selection.rect)
+            // Show overlay window (use converted coordinates)
+            self.overlayWindow = ScrollCaptureOverlayWindow(selectionRect: selectionInScreen)
             self.overlayWindow?.updateCaptureCount(self.capturedImages.count)
 
             self.overlayWindow?.onDone = { [weak self] in

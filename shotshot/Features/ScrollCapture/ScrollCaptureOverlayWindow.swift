@@ -43,7 +43,7 @@ final class ScrollCaptureOverlayWindow {
         window.level = .statusBar
         window.isOpaque = false
         window.backgroundColor = .clear
-        window.hasShadow = false
+        window.hasShadow = true
         window.ignoresMouseEvents = false
         window.isReleasedWhenClosed = false
         window.contentView = indicatorView
@@ -185,17 +185,30 @@ final class ScrollCaptureIndicatorView: NSView {
         )
 
         context.setStrokeColor(NSColor.systemBlue.cgColor)
-        context.setLineWidth(2.0)
+        context.setLineWidth(3.0)
         context.setLineDash(phase: 0, lengths: [8, 4])
         context.stroke(borderRect)
 
-        // Badge background (dark rounded rectangle)
+        // Badge background with shadow and border
         let badgeY = bounds.height - badgeHeight
-        let badgeWidth = (hintLabel.frame.maxX - padding) + 10
+        let badgeWidth = (hintLabel.frame.maxX - padding) + 14
         let badgeBgRect = NSRect(x: padding, y: badgeY, width: badgeWidth, height: badgeHeight)
-        let badgePath = NSBezierPath(roundedRect: badgeBgRect, xRadius: 6, yRadius: 6)
-        NSColor(white: 0.1, alpha: 0.9).setFill()
+        let badgePath = NSBezierPath(roundedRect: badgeBgRect, xRadius: 8, yRadius: 8)
+
+        // Draw shadow
+        context.saveGState()
+        let shadowColor = NSColor.black.withAlphaComponent(0.5).cgColor
+        context.setShadow(offset: CGSize(width: 0, height: -2), blur: 6, color: shadowColor)
+
+        // Fill with gradient-like dark background
+        NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.18, alpha: 0.95).setFill()
         badgePath.fill()
+        context.restoreGState()
+
+        // Draw white border around badge
+        NSColor.white.withAlphaComponent(0.3).setStroke()
+        badgePath.lineWidth = 1.0
+        badgePath.stroke()
     }
 
     func updateCaptureCount(_ count: Int) {

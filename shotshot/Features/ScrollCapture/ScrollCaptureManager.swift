@@ -126,16 +126,23 @@ final class ScrollCaptureManager {
             throw CaptureError.captureFailedError("No images captured")
         }
 
-        // Stitch images if more than one
+        // Copy images for background processing
+        let imagesToStitch = capturedImages
+
+        // Stitch images if more than one (run on background thread)
         let finalImage: CGImage
-        if capturedImages.count == 1 {
-            finalImage = capturedImages[0]
+        if imagesToStitch.count == 1 {
+            finalImage = imagesToStitch[0]
         } else {
-            let stitcher = ImageStitcher()
-            guard let stitched = stitcher.stitch(images: capturedImages) else {
+            let stitched = await Task.detached(priority: .userInitiated) {
+                let stitcher = ImageStitcher()
+                return stitcher.stitch(images: imagesToStitch)
+            }.value
+
+            guard let stitchedImage = stitched else {
                 throw CaptureError.captureFailedError("Failed to stitch images")
             }
-            finalImage = stitched
+            finalImage = stitchedImage
         }
 
         // Convert to NSImage

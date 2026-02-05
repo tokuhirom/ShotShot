@@ -13,6 +13,12 @@ A screenshot & screen recording tool for macOS. Capture a selected region, annot
 - **Region selection**: Powered by ScreenCaptureKit
 - **Retina support**: Full high-DPI display support
 
+### Scroll Capture (Experimental)
+- **Scrolling screenshot**: Capture an entire scrollable area via `⌃⇧7`
+- **Automatic detection**: Captures are triggered automatically as you scroll
+- **Image stitching**: Overlapping regions are detected and merged into a single image
+- **Visual feedback**: Flash effect on each capture, progress indicator with capture count
+
 ### Screen Recording
 - **Record selected region**: Choose any area of the screen to record via `⌃⇧6`
 - **Recording indicator**: Red border with REC badge, elapsed time, and stop button
@@ -43,6 +49,7 @@ A screenshot & screen recording tool for macOS. Capture a selected region, annot
 | ⌃⇧4 | Take screenshot |
 | ⌃⇧5 | Take screenshot with 3s timer |
 | ⌃⇧6 | Record screen |
+| ⌃⇧7 | Scroll capture |
 | ⌘Z | Undo |
 | ⇧⌘Z | Redo |
 | ⌘S | Save as |
@@ -85,6 +92,14 @@ A screenshot & screen recording tool for macOS. Capture a selected region, annot
 3. Drag to select the region you want to capture
 4. The editor window opens — add annotations as needed
 5. Click "Done" to save and copy to clipboard
+
+### Scroll Capture
+
+1. Press `⌃⇧7` or select "Scroll Capture" from the menu
+2. Drag to select the region you want to capture
+3. Scroll the content — captures are taken automatically
+4. Press "Done" or Enter to finish
+5. The stitched image opens in the editor
 
 ### Screen Recording
 

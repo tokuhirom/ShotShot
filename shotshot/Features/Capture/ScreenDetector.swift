@@ -35,16 +35,14 @@ struct ScreenDetector {
     }
 
     static func getScreen(at point: CGPoint) -> ScreenInfo? {
-        for screen in NSScreen.screens {
-            if screen.frame.contains(point) {
-                guard let displayID = screen.displayID else { continue }
-                return ScreenInfo(
-                    screen: screen,
-                    displayID: displayID,
-                    frame: screen.frame,
-                    isMain: screen == NSScreen.main
-                )
-            }
+        for screen in NSScreen.screens where screen.frame.contains(point) {
+            guard let displayID = screen.displayID else { continue }
+            return ScreenInfo(
+                screen: screen,
+                displayID: displayID,
+                frame: screen.frame,
+                isMain: screen == NSScreen.main
+            )
         }
         return nil
     }

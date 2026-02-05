@@ -22,7 +22,7 @@ final class HotkeyManager {
             eventKind: UInt32(kEventHotKeyPressed)
         )
 
-        let handlerCallback: EventHandlerUPP = { _, event, _ in
+        let handlerCallback: EventHandlerUPP = { _, _, _ in
             Task { @MainActor in
                 HotkeyManager.sharedInstance?.onHotkeyPressed?()
             }

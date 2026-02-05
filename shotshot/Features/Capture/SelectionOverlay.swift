@@ -188,10 +188,8 @@ final class SelectionOverlayWindow: NSWindow {
 
     private func findWindowAt(screenPoint: CGPoint) -> WindowInfo? {
         // Search windows in screen coordinates (top is 0)
-        for window in windowsUnderCursor {
-            if window.frame.contains(screenPoint) {
-                return window
-            }
+        for window in windowsUnderCursor where window.frame.contains(screenPoint) {
+            return window
         }
         return nil
     }
@@ -429,7 +427,7 @@ final class SelectionOverlayView: NSView {
         let font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor.white,
+            .foregroundColor: NSColor.white
         ]
         let textSize = text.size(withAttributes: attributes)
 
@@ -454,7 +452,7 @@ final class SelectionOverlayView: NSView {
         let shadowAttributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: NSColor.white,
-            .shadow: shadow,
+            .shadow: shadow
         ]
         let textRect = CGRect(
             x: rect.midX - textSize.width / 2,

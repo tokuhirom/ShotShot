@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var hotkeyManager: HotkeyManager?
     private var captureManager: CaptureManager?
     private var recordingManager: RecordingManager?
+    private var scrollCaptureManager: ScrollCaptureManager?
     private var editorWindows: Set<NSWindow> = []
     private var settingsWindow: NSWindow?
     private var keyEventMonitor: Any?
@@ -17,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setupHotkey()
         setupCaptureManager()
         setupRecordingManager()
+        setupScrollCaptureManager()
         setupKeyEventMonitor()
         setupHotkeyChangeObserver()
         setupTimerSettingsObserver()
@@ -66,6 +68,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     await self?.startTimerCapture()
                 }
             },
+            onScrollCapture: { [weak self] in
+                Task { @MainActor in
+                    await self?.startScrollCapture()
+                }
+            },
             onRecording: { [weak self] in
                 Task { @MainActor in
                     await self?.startRecording()
@@ -90,6 +97,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 await self?.startCapture()
             }
         }
+        hotkeyManager?.onScrollCaptureHotkeyPressed = { [weak self] in
+            Task { @MainActor in
+                await self?.startScrollCapture()
+            }
+        }
         hotkeyManager?.register()
     }
 
@@ -99,6 +111,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func setupRecordingManager() {
         recordingManager = RecordingManager()
+    }
+
+    private func setupScrollCaptureManager() {
+        scrollCaptureManager = ScrollCaptureManager()
     }
 
     private func setupKeyEventMonitor() {
@@ -209,6 +225,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         } catch {
             print("[shotshot] Recording error: \(error)")
             menuBarManager?.updateRecordingState(isRecording: false)
+            showErrorAlert(error: error)
+        }
+    }
+
+    func startScrollCapture() async {
+        guard let scrollCaptureManager = scrollCaptureManager else {
+            print("[shotshot] scrollCaptureManager is nil")
+            return
+        }
+
+        print("[shotshot] Starting scroll capture...")
+        do {
+            let screenshot = try await scrollCaptureManager.startScrollCapture()
+            print("[shotshot] Scroll capture completed, showing editor...")
+            showEditor(with: screenshot)
+        } catch CaptureError.cancelled {
+            print("[shotshot] Scroll capture cancelled by user")
+        } catch CaptureError.permissionDenied {
+            print("[shotshot] Permission denied")
+            showPermissionAlert()
+        } catch {
+            print("[shotshot] Scroll capture error: \(error)")
             showErrorAlert(error: error)
         }
     }

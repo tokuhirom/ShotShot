@@ -56,6 +56,7 @@ shotshot/
 │   ├── Annotations/ # Arrow, rectangle, text, mosaic tools
 │   ├── MenuBar/     # Menu bar integration
 │   ├── Recording/   # Screen recording (SCStream + AVAssetWriter)
+│   ├── ScrollCapture/ # Scrolling screenshot (auto-detect + stitch)
 │   └── Settings/    # Settings view
 ├── Models/          # Data models
 ├── Services/        # Clipboard, image export, video export, hotkey
@@ -78,3 +79,4 @@ shotshot/
  - [x] Cmd-V to open image from clipboard for editing
  - [x] Cmd-C to copy to clipboard
  - [x] Make select and arrow icons more distinguishable
+ - [x] Scroll capture feature (Ctrl+Shift+7)

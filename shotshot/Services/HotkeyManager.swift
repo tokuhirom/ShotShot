@@ -6,9 +6,11 @@ import Foundation
 final class HotkeyManager {
     private var eventHandler: EventHandlerRef?
     private var hotkeyRef: EventHotKeyRef?
+    private var scrollCaptureHotkeyRef: EventHotKeyRef?
     private static var sharedInstance: HotkeyManager?
 
     var onHotkeyPressed: (() -> Void)?
+    var onScrollCaptureHotkeyPressed: (() -> Void)?
 
     init() {
         HotkeyManager.sharedInstance = self
@@ -23,8 +25,23 @@ final class HotkeyManager {
         )
 
         let handlerCallback: EventHandlerUPP = { _, event, _ in
+            var hotkeyID = EventHotKeyID()
+            GetEventParameter(
+                event,
+                EventParamName(kEventParamDirectObject),
+                EventParamType(typeEventHotKeyID),
+                nil,
+                MemoryLayout<EventHotKeyID>.size,
+                nil,
+                &hotkeyID
+            )
+
             Task { @MainActor in
-                HotkeyManager.sharedInstance?.onHotkeyPressed?()
+                if hotkeyID.id == 1 {
+                    HotkeyManager.sharedInstance?.onHotkeyPressed?()
+                } else if hotkeyID.id == 2 {
+                    HotkeyManager.sharedInstance?.onScrollCaptureHotkeyPressed?()
+                }
             }
             return noErr
         }
@@ -38,8 +55,8 @@ final class HotkeyManager {
             &eventHandler
         )
 
+        // Register main capture hotkey (Ctrl+Shift+4)
         let hotkeyID = EventHotKeyID(signature: OSType(0x5353_4854), id: 1) // "SSHT"
-
         let modifiers = carbonModifiers(from: settings.hotkeyModifiers)
 
         RegisterEventHotKey(
@@ -50,12 +67,30 @@ final class HotkeyManager {
             0,
             &hotkeyRef
         )
+
+        // Register scroll capture hotkey (Ctrl+Shift+7)
+        let scrollCaptureHotkeyID = EventHotKeyID(signature: OSType(0x5353_4854), id: 2) // "SSHT" with id 2
+        let scrollCaptureModifiers = UInt32(controlKey) | UInt32(shiftKey)
+        let scrollCaptureKeyCode: UInt32 = 0x1A  // Key code for '7'
+
+        RegisterEventHotKey(
+            scrollCaptureKeyCode,
+            scrollCaptureModifiers,
+            scrollCaptureHotkeyID,
+            GetApplicationEventTarget(),
+            0,
+            &scrollCaptureHotkeyRef
+        )
     }
 
     func unregister() {
         if let hotkeyRef = hotkeyRef {
             UnregisterEventHotKey(hotkeyRef)
             self.hotkeyRef = nil
+        }
+        if let scrollCaptureHotkeyRef = scrollCaptureHotkeyRef {
+            UnregisterEventHotKey(scrollCaptureHotkeyRef)
+            self.scrollCaptureHotkeyRef = nil
         }
         if let eventHandler = eventHandler {
             RemoveEventHandler(eventHandler)

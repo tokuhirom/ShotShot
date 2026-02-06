@@ -80,6 +80,9 @@
 "editor.square" = "Square";
 "editor.apply_crop" = "Apply";
 "editor.crop_drag_hint" = "Drag to select a crop area";
+"editor.zoom" = "Zoom";
+"editor.zoom_in" = "Zoom In";
+"editor.zoom_out" = "Zoom Out";
 "editor.undo_help" = "Undo (⌘Z)";
 "editor.redo_help" = "Redo (⇧⌘Z)";
 "editor.clear_annotations" = "Clear";

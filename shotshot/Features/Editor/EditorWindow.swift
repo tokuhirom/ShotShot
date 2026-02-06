@@ -4,6 +4,7 @@ import SwiftUI
 struct EditorWindow: View {
     @Bindable var viewModel: EditorViewModel
     @State private var displayScale: CGFloat = 1.0
+    @State private var isUserZooming: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,6 +35,22 @@ struct EditorWindow: View {
                 // Delete: Delete selected annotation
                 Button("") { viewModel.deleteSelectedAnnotation() }
                     .keyboardShortcut(.delete, modifiers: [])
+                    .opacity(0)
+                // ⌘+: Zoom in
+                Button("") { zoomIn() }
+                    .keyboardShortcut("=", modifiers: .command)
+                    .opacity(0)
+                // ⇧⌘+: Zoom in (some keyboard layouts send Shift+="")
+                Button("") { zoomIn() }
+                    .keyboardShortcut("=", modifiers: [.command, .shift])
+                    .opacity(0)
+                // ⌘-: Zoom out
+                Button("") { zoomOut() }
+                    .keyboardShortcut("-", modifiers: .command)
+                    .opacity(0)
+                // ⌘0: Zoom reset (100%)
+                Button("") { resetZoom() }
+                    .keyboardShortcut("0", modifiers: .command)
                     .opacity(0)
             }
         )
@@ -208,41 +225,60 @@ struct EditorWindow: View {
                 let expandedSize = viewModel.expandedImageSize
                 let imageSize = viewModel.screenshot.image.size
                 let offset = viewModel.imageOffset
-                let scaledSize = scaledImageSize(imageSize: expandedSize, containerSize: geometry.size)
-                let displayScaleValue = scaledSize.width / expandedSize.width
+                let fitScaleValue = fitScale(imageSize: expandedSize, containerSize: geometry.size)
+                let effectiveScale = isUserZooming ? displayScale : fitScaleValue
+                let scaledSize = CGSize(
+                    width: expandedSize.width * effectiveScale,
+                    height: expandedSize.height * effectiveScale
+                )
 
-                ZStack(alignment: .topLeading) {
-                    // White background (entire expanded area)
-                    Color.white
+                ScrollView([.horizontal, .vertical]) {
+                    ZStack(alignment: .topLeading) {
+                        // White background (entire expanded area)
+                        Color.white
+                            .frame(width: scaledSize.width, height: scaledSize.height)
+
+                        // Place the source image at the offset position
+                        Image(nsImage: viewModel.compositeImage)
+                            .resizable()
+                            .frame(
+                                width: imageSize.width * effectiveScale,
+                                height: imageSize.height * effectiveScale
+                            )
+                            .offset(
+                                x: offset.x * effectiveScale,
+                                y: offset.y * effectiveScale
+                            )
+
+                        // Annotation canvas (full size)
+                        AnnotationCanvas(
+                            viewModel: viewModel,
+                            canvasSize: scaledSize,
+                            expandedSize: expandedSize,
+                            imageOffset: offset
+                        )
                         .frame(width: scaledSize.width, height: scaledSize.height)
-
-                    // Place the source image at the offset position
-                    Image(nsImage: viewModel.compositeImage)
-                        .resizable()
-                        .frame(
-                            width: imageSize.width * displayScaleValue,
-                            height: imageSize.height * displayScaleValue
-                        )
-                        .offset(
-                            x: offset.x * displayScaleValue,
-                            y: offset.y * displayScaleValue
-                        )
-
-                    // Annotation canvas (full size)
-                    AnnotationCanvas(
-                        viewModel: viewModel,
-                        canvasSize: scaledSize,
-                        expandedSize: expandedSize,
-                        imageOffset: offset
-                    )
+                    }
                     .frame(width: scaledSize.width, height: scaledSize.height)
+                    .frame(
+                        minWidth: geometry.size.width,
+                        minHeight: geometry.size.height,
+                        alignment: .center
+                    )
                 }
                 .onAppear {
-                    displayScale = displayScaleValue
+                    displayScale = fitScaleValue
+                    isUserZooming = false
                 }
                 .onChange(of: geometry.size) { _, _ in
-                    let newScaledSize = scaledImageSize(imageSize: expandedSize, containerSize: geometry.size)
-                    displayScale = newScaledSize.width / expandedSize.width
+                    if !isUserZooming {
+                        displayScale = fitScaleValue
+                    }
+                }
+                .onChange(of: expandedSize) { _, _ in
+                    if !isUserZooming {
+                        displayScale = fitScaleValue
+                    }
                 }
             }
         }
@@ -255,7 +291,30 @@ struct EditorWindow: View {
                 .foregroundColor(.secondary)
                 .font(.caption)
                 .monospacedDigit()
-                .frame(width: 40, alignment: .leading)
+                .frame(width: 56, alignment: .leading)
+
+            HStack(spacing: 6) {
+                Button(action: { zoomOut() }) {
+                    Image(systemName: "minus.magnifyingglass")
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel(Text("editor.zoom_out"))
+
+                Slider(
+                    value: zoomBinding,
+                    in: zoomRange
+                ) {
+                    Text("editor.zoom")
+                }
+                .labelsHidden()
+                .frame(width: 140)
+
+                Button(action: { zoomIn() }) {
+                    Image(systemName: "plus.magnifyingglass")
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel(Text("editor.zoom_in"))
+            }
 
             Text(viewModel.statusMessage)
                 .foregroundColor(.secondary)
@@ -278,15 +337,41 @@ struct EditorWindow: View {
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
-    private func scaledImageSize(imageSize: NSSize, containerSize: CGSize) -> CGSize {
+    private var zoomRange: ClosedRange<CGFloat> { 0.01...4.0 }
+    private var zoomStep: CGFloat { 0.1 }
+
+    private var zoomBinding: Binding<CGFloat> {
+        Binding(
+            get: { displayScale },
+            set: { updateDisplayScale($0) }
+        )
+    }
+
+    private func fitScale(imageSize: NSSize, containerSize: CGSize) -> CGFloat {
         let widthRatio = containerSize.width / imageSize.width
         let heightRatio = containerSize.height / imageSize.height
-        let ratio = min(widthRatio, heightRatio, 1.0)
+        return min(widthRatio, heightRatio, 1.0)
+    }
 
-        return CGSize(
-            width: imageSize.width * ratio,
-            height: imageSize.height * ratio
-        )
+    private func clampZoom(_ value: CGFloat) -> CGFloat {
+        min(max(value, zoomRange.lowerBound), zoomRange.upperBound)
+    }
+
+    private func updateDisplayScale(_ value: CGFloat) {
+        displayScale = clampZoom(value)
+        isUserZooming = true
+    }
+
+    private func zoomIn() {
+        updateDisplayScale(displayScale + zoomStep)
+    }
+
+    private func zoomOut() {
+        updateDisplayScale(displayScale - zoomStep)
+    }
+
+    private func resetZoom() {
+        updateDisplayScale(1.0)
     }
 }
 

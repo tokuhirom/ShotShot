@@ -80,6 +80,9 @@
 "editor.square" = "角張り";
 "editor.apply_crop" = "適用";
 "editor.crop_drag_hint" = "ドラッグして切り抜き領域を選択";
+"editor.zoom" = "ズーム";
+"editor.zoom_in" = "拡大";
+"editor.zoom_out" = "縮小";
 "editor.undo_help" = "取り消し (⌘Z)";
 "editor.redo_help" = "やり直し (⇧⌘Z)";
 "editor.clear_annotations" = "クリア";

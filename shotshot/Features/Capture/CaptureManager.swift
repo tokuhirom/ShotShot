@@ -81,6 +81,12 @@ final class CaptureManager {
         let selection = try await showSelectionOverlay()
         print("[CaptureManager] Selection completed: \(selection)")
 
+        // Close the overlay before capturing
+        closeOverlayWindows()
+
+        // Wait for screen redraw
+        try await Task.sleep(nanoseconds: 150_000_000)
+
         print("[CaptureManager] Capturing rect...")
         let screenshot = try await captureRect(selection)
         print("[CaptureManager] Capture done, image size: \(screenshot.image.size), scale: \(screenshot.scaleFactor)")

@@ -280,10 +280,8 @@ struct AnnotationCanvas: View {
                     viewModel.deselectAnnotation()
                 }
             } else if viewModel.selectedTool == .crop {
-                // Crop tool: start selecting crop area
-                if viewModel.cropRect == nil {
-                    viewModel.startCrop(at: scaledStart)
-                }
+                // Crop tool: always start new crop selection
+                viewModel.startCrop(at: scaledStart)
             } else if viewModel.selectedTool == .text {
                 // Text tool: click to select existing or start new text
                 if let hitAnnotation = viewModel.hitTest(at: scaledStart) {

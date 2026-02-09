@@ -27,9 +27,13 @@ final class EditorViewModel {
     }
     var statusMessage: String = ""
 
-    // Undo/Redo stacks
-    private var undoStack: [[Annotation]] = []
-    private var redoStack: [[Annotation]] = []
+    // Undo/Redo stacks - stores both screenshot and annotations
+    private struct EditorState {
+        let screenshot: Screenshot
+        let annotations: [Annotation]
+    }
+    private var undoStack: [EditorState] = []
+    private var redoStack: [EditorState] = []
 
     // Selection state
     var selectedAnnotationId: UUID?
@@ -109,7 +113,7 @@ final class EditorViewModel {
     // MARK: - Undo/Redo
 
     func saveStateForUndo() {
-        undoStack.append(annotations)
+        undoStack.append(EditorState(screenshot: screenshot, annotations: annotations))
         redoStack.removeAll()
     }
 
@@ -261,6 +265,9 @@ final class EditorViewModel {
             return
         }
 
+        // Save state for undo before modifying
+        saveStateForUndo()
+
         let scale = screenshot.scaleFactor
 
         // Convert to image coordinates (invert Y axis)
@@ -273,6 +280,8 @@ final class EditorViewModel {
         let cropCGRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
 
         guard let croppedCGImage = cgImage.cropping(to: cropCGRect) else {
+            // Remove the undo state we just added since crop failed
+            _ = undoStack.popLast()
             cropRect = nil
             return
         }
@@ -308,8 +317,7 @@ final class EditorViewModel {
             return nil
         }
 
-        // Clear undo history (cannot undo after crop)
-        undoStack.removeAll()
+        // Clear redo stack since we made a new change
         redoStack.removeAll()
 
         cropRect = nil
@@ -327,16 +335,20 @@ final class EditorViewModel {
 
     func undo() {
         guard !undoStack.isEmpty else { return }
-        redoStack.append(annotations)
-        annotations = undoStack.removeLast()
+        redoStack.append(EditorState(screenshot: screenshot, annotations: annotations))
+        let state = undoStack.removeLast()
+        screenshot = state.screenshot
+        annotations = state.annotations
         selectedAnnotationId = nil
         statusMessage = NSLocalizedString("editor.status.undo", comment: "")
     }
 
     func redo() {
         guard !redoStack.isEmpty else { return }
-        undoStack.append(annotations)
-        annotations = redoStack.removeLast()
+        undoStack.append(EditorState(screenshot: screenshot, annotations: annotations))
+        let state = redoStack.removeLast()
+        screenshot = state.screenshot
+        annotations = state.annotations
         selectedAnnotationId = nil
         statusMessage = NSLocalizedString("editor.status.redo", comment: "")
     }

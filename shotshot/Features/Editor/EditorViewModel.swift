@@ -36,6 +36,7 @@ final class EditorViewModel {
 
     // Crop state (kept in image coordinates)
     var cropRect: CGRect?
+    private var cropStartPoint: CGPoint?
 
     // Editing text bounds (image coordinates) - for canvas expansion
     var editingTextBounds: CGRect?
@@ -230,11 +231,12 @@ final class EditorViewModel {
     // MARK: - Crop
 
     func startCrop(at point: CGPoint) {
+        cropStartPoint = point
         cropRect = CGRect(origin: point, size: .zero)
     }
 
     func updateCrop(to point: CGPoint) {
-        guard let startPoint = cropRect?.origin else { return }
+        guard let startPoint = cropStartPoint else { return }
         cropRect = CGRect(
             x: min(startPoint.x, point.x),
             y: min(startPoint.y, point.y),
@@ -245,6 +247,7 @@ final class EditorViewModel {
 
     func cancelCrop() {
         cropRect = nil
+        cropStartPoint = nil
     }
 
     func applyCrop() {
@@ -310,6 +313,7 @@ final class EditorViewModel {
         redoStack.removeAll()
 
         cropRect = nil
+        cropStartPoint = nil
         statusMessage = NSLocalizedString("editor.status.cropped", comment: "")
     }
 

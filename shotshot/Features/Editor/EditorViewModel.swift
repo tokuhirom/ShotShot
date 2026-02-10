@@ -268,14 +268,22 @@ final class EditorViewModel {
         // Save state for undo before modifying
         saveStateForUndo()
 
-        let scale = screenshot.scaleFactor
+        let imageBounds = CGRect(origin: .zero, size: screenshot.image.size)
+        let clampedRect = rect.intersection(imageBounds)
+        guard clampedRect.width > 10 && clampedRect.height > 10 else {
+            _ = undoStack.popLast()
+            cropRect = nil
+            return
+        }
 
-        // Convert to image coordinates (invert Y axis)
-        let imageHeight = CGFloat(cgImage.height)
-        let cropX = rect.origin.x * scale
-        let cropY = imageHeight - (rect.origin.y + rect.height) * scale
-        let cropWidth = rect.width * scale
-        let cropHeight = rect.height * scale
+        let pixelScaleX = CGFloat(cgImage.width) / screenshot.image.size.width
+        let pixelScaleY = CGFloat(cgImage.height) / screenshot.image.size.height
+
+        // Convert to CGImage pixel coordinates (top-left origin)
+        let cropX = clampedRect.origin.x * pixelScaleX
+        let cropY = clampedRect.origin.y * pixelScaleY
+        let cropWidth = clampedRect.width * pixelScaleX
+        let cropHeight = clampedRect.height * pixelScaleY
 
         let cropCGRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
 
@@ -287,7 +295,7 @@ final class EditorViewModel {
         }
 
         // Create a new screenshot
-        let newSize = NSSize(width: rect.width, height: rect.height)
+        let newSize = NSSize(width: clampedRect.width, height: clampedRect.height)
         let newImage = NSImage(cgImage: croppedCGImage, size: newSize)
 
         screenshot = Screenshot(
@@ -297,8 +305,8 @@ final class EditorViewModel {
         )
 
         // Adjust annotation coordinates (relative to crop origin)
-        let offsetX = rect.origin.x
-        let offsetY = rect.origin.y
+        let offsetX = clampedRect.origin.x
+        let offsetY = clampedRect.origin.y
         annotations = annotations.compactMap { annotation in
             var newAnnotation = annotation
             newAnnotation.startPoint = CGPoint(

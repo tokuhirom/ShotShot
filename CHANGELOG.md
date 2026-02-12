@@ -1,0 +1,19 @@
+# Changelog
+
+## [v0.0.1](https://github.com/tokuhirom/ShotShot/commits/v0.0.1) - 2026-02-12
+- fix: selection area showing gray tint instead of original colors by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/2
+- Add GitHub Actions CI workflow by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/1
+- fix: orphan window appearing after video save dialog by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/3
+- fix: replace Japanese comment with English by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/5
+- fix: ensure recording indicator badge is visible for narrow selections by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/6
+- fix: exclude recording indicator window from screen capture by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/7
+- fix: set BGRA pixel format for screen recording by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/8
+- fix: use logical size instead of physical pixels for recording by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/9
+- Add scroll capture feature (experimental) by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/11
+- Update README with scroll capture feature by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/12
+- Add SwiftLint with CI integration by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/13
+- i18n by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/14
+- feat: zoom in/zoom out by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/15
+- Fix selection overlay appearing in screenshots by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/17
+- Set up tagpr and automated release build by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/19
+- Fix crop coordinates when zoomed by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/18

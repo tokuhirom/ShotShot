@@ -27,15 +27,20 @@ final class EditorViewModel {
     }
     var statusMessage: String = ""
 
-    // Undo/Redo stacks
-    private var undoStack: [[Annotation]] = []
-    private var redoStack: [[Annotation]] = []
+    // Undo/Redo stacks - stores both screenshot and annotations
+    private struct EditorState {
+        let screenshot: Screenshot
+        let annotations: [Annotation]
+    }
+    private var undoStack: [EditorState] = []
+    private var redoStack: [EditorState] = []
 
     // Selection state
     var selectedAnnotationId: UUID?
 
     // Crop state (kept in image coordinates)
     var cropRect: CGRect?
+    private var cropStartPoint: CGPoint?
 
     // Editing text bounds (image coordinates) - for canvas expansion
     var editingTextBounds: CGRect?
@@ -108,7 +113,7 @@ final class EditorViewModel {
     // MARK: - Undo/Redo
 
     func saveStateForUndo() {
-        undoStack.append(annotations)
+        undoStack.append(EditorState(screenshot: screenshot, annotations: annotations))
         redoStack.removeAll()
     }
 
@@ -230,11 +235,12 @@ final class EditorViewModel {
     // MARK: - Crop
 
     func startCrop(at point: CGPoint) {
+        cropStartPoint = point
         cropRect = CGRect(origin: point, size: .zero)
     }
 
     func updateCrop(to point: CGPoint) {
-        guard let startPoint = cropRect?.origin else { return }
+        guard let startPoint = cropStartPoint else { return }
         cropRect = CGRect(
             x: min(startPoint.x, point.x),
             y: min(startPoint.y, point.y),
@@ -245,6 +251,7 @@ final class EditorViewModel {
 
     func cancelCrop() {
         cropRect = nil
+        cropStartPoint = nil
     }
 
     func applyCrop() {
@@ -258,24 +265,37 @@ final class EditorViewModel {
             return
         }
 
-        let scale = screenshot.scaleFactor
+        // Save state for undo before modifying
+        saveStateForUndo()
 
-        // Convert to image coordinates (invert Y axis)
-        let imageHeight = CGFloat(cgImage.height)
-        let cropX = rect.origin.x * scale
-        let cropY = imageHeight - (rect.origin.y + rect.height) * scale
-        let cropWidth = rect.width * scale
-        let cropHeight = rect.height * scale
+        let imageBounds = CGRect(origin: .zero, size: screenshot.image.size)
+        let clampedRect = rect.intersection(imageBounds)
+        guard clampedRect.width > 10 && clampedRect.height > 10 else {
+            _ = undoStack.popLast()
+            cropRect = nil
+            return
+        }
+
+        let pixelScaleX = CGFloat(cgImage.width) / screenshot.image.size.width
+        let pixelScaleY = CGFloat(cgImage.height) / screenshot.image.size.height
+
+        // Convert to CGImage pixel coordinates (top-left origin)
+        let cropX = clampedRect.origin.x * pixelScaleX
+        let cropY = clampedRect.origin.y * pixelScaleY
+        let cropWidth = clampedRect.width * pixelScaleX
+        let cropHeight = clampedRect.height * pixelScaleY
 
         let cropCGRect = CGRect(x: cropX, y: cropY, width: cropWidth, height: cropHeight)
 
         guard let croppedCGImage = cgImage.cropping(to: cropCGRect) else {
+            // Remove the undo state we just added since crop failed
+            _ = undoStack.popLast()
             cropRect = nil
             return
         }
 
         // Create a new screenshot
-        let newSize = NSSize(width: rect.width, height: rect.height)
+        let newSize = NSSize(width: clampedRect.width, height: clampedRect.height)
         let newImage = NSImage(cgImage: croppedCGImage, size: newSize)
 
         screenshot = Screenshot(
@@ -285,8 +305,8 @@ final class EditorViewModel {
         )
 
         // Adjust annotation coordinates (relative to crop origin)
-        let offsetX = rect.origin.x
-        let offsetY = rect.origin.y
+        let offsetX = clampedRect.origin.x
+        let offsetY = clampedRect.origin.y
         annotations = annotations.compactMap { annotation in
             var newAnnotation = annotation
             newAnnotation.startPoint = CGPoint(
@@ -305,11 +325,11 @@ final class EditorViewModel {
             return nil
         }
 
-        // Clear undo history (cannot undo after crop)
-        undoStack.removeAll()
+        // Clear redo stack since we made a new change
         redoStack.removeAll()
 
         cropRect = nil
+        cropStartPoint = nil
         statusMessage = NSLocalizedString("editor.status.cropped", comment: "")
     }
 
@@ -323,16 +343,20 @@ final class EditorViewModel {
 
     func undo() {
         guard !undoStack.isEmpty else { return }
-        redoStack.append(annotations)
-        annotations = undoStack.removeLast()
+        redoStack.append(EditorState(screenshot: screenshot, annotations: annotations))
+        let state = undoStack.removeLast()
+        screenshot = state.screenshot
+        annotations = state.annotations
         selectedAnnotationId = nil
         statusMessage = NSLocalizedString("editor.status.undo", comment: "")
     }
 
     func redo() {
         guard !redoStack.isEmpty else { return }
-        undoStack.append(annotations)
-        annotations = redoStack.removeLast()
+        undoStack.append(EditorState(screenshot: screenshot, annotations: annotations))
+        let state = redoStack.removeLast()
+        screenshot = state.screenshot
+        annotations = state.annotations
         selectedAnnotationId = nil
         statusMessage = NSLocalizedString("editor.status.redo", comment: "")
     }

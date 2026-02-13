@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.1.0](https://github.com/tokuhirom/ShotShot/compare/v0.0.1...v0.1.0) - 2026-02-13
+- Add code signing and notarization to release workflow by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/21
+
 ## [v0.0.1](https://github.com/tokuhirom/ShotShot/commits/v0.0.1) - 2026-02-12
 - fix: selection area showing gray tint instead of original colors by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/2
 - Add GitHub Actions CI workflow by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/1

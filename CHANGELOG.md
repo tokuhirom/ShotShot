@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.2.0](https://github.com/tokuhirom/ShotShot/compare/v0.1.0...v0.2.0) - 2026-02-13
+- Fix code signing conflict by setting CODE_SIGN_STYLE to Manual by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/23
+
 ## [v0.1.0](https://github.com/tokuhirom/ShotShot/compare/v0.0.1...v0.1.0) - 2026-02-13
 - Add code signing and notarization to release workflow by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/21
 

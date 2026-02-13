@@ -17,6 +17,12 @@ jobs:
       - name: Select Xcode 16.2
         run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
 
+      - name: Import Code-Signing Certificates
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
       - name: Build Release
         run: |
           xcodebuild build \
@@ -24,11 +30,28 @@ jobs:
             -scheme shotshot \
             -configuration Release \
             -derivedDataPath build \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
             ONLY_ACTIVE_ARCH=NO
 
-      - name: Create zip
+      - name: Create zip for Notarization
+        run: |
+          cd build/Build/Products/Release
+          ditto -c -k --keepParent ShotShot.app ShotShot.zip
+
+      - name: Notarize app
+        run: |
+          xcrun notarytool submit build/Build/Products/Release/ShotShot.zip \
+            --apple-id "${{ secrets.APPLE_ID }}" \
+            --password "${{ secrets.APPLE_ID_PASSWORD }}" \
+            --team-id "${{ secrets.APPLE_TEAM_ID }}" \
+            --wait
+
+      - name: Staple notarization ticket
+        run: |
+          xcrun stapler staple build/Build/Products/Release/ShotShot.app
+
+      - name: Create final zip
         run: |
           cd build/Build/Products/Release
           zip -r "${GITHUB_WORKSPACE}/ShotShot.zip" ShotShot.app

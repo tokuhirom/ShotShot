@@ -42,13 +42,27 @@ jobs:
 
       - name: Notarize app
         run: |
-          xcrun notarytool submit build/Build/Products/Release/ShotShot.zip \
+          # Submit and capture submission ID
+          SUBMISSION_ID=$(xcrun notarytool submit build/Build/Products/Release/ShotShot.zip \
             --apple-id "${{ secrets.APPLE_ID }}" \
             --password "${{ secrets.APPLE_ID_PASSWORD }}" \
             --team-id "${{ secrets.APPLE_TEAM_ID }}" \
-            --wait
-          echo "Waiting for notarization ticket to propagate..."
-          sleep 30
+            --wait \
+            --output-format json | jq -r '.id')
+
+          echo "Submission ID: $SUBMISSION_ID"
+
+          # Get detailed log
+          xcrun notarytool log "$SUBMISSION_ID" \
+            --apple-id "${{ secrets.APPLE_ID }}" \
+            --password "${{ secrets.APPLE_ID_PASSWORD }}" \
+            --team-id "${{ secrets.APPLE_TEAM_ID }}"
+
+          # Check status
+          xcrun notarytool info "$SUBMISSION_ID" \
+            --apple-id "${{ secrets.APPLE_ID }}" \
+            --password "${{ secrets.APPLE_ID_PASSWORD }}" \
+            --team-id "${{ secrets.APPLE_TEAM_ID }}"
 
       - name: Staple notarization ticket
         run: |

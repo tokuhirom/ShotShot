@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.2.1](https://github.com/tokuhirom/ShotShot/compare/v0.2.0...v0.2.1) - 2026-02-14
+- Fix notarization stapling by adding wait time by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/25
+
 ## [v0.2.0](https://github.com/tokuhirom/ShotShot/compare/v0.1.0...v0.2.0) - 2026-02-13
 - Fix code signing conflict by setting CODE_SIGN_STYLE to Manual by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/23
 

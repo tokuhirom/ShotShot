@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.4.0](https://github.com/tokuhirom/ShotShot/compare/v0.3.1...v0.4.0) - 2026-02-14
+- Add app icon using camera.viewfinder SF Symbol by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/32
+
 ## [v0.3.1](https://github.com/tokuhirom/ShotShot/compare/v0.3.0...v0.3.1) - 2026-02-14
 - Fix notarization issues: disable base entitlements and add timestamp by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/30
 

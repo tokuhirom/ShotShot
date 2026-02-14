@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.3.1](https://github.com/tokuhirom/ShotShot/compare/v0.3.0...v0.3.1) - 2026-02-14
+- Fix notarization issues: disable base entitlements and add timestamp by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/30
+
 ## [v0.2.2](https://github.com/tokuhirom/ShotShot/compare/v0.2.1...v0.2.2) - 2026-02-14
 - Add detailed notarization logging to debug stapling failure by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/27
 

@@ -33,6 +33,8 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
+            OTHER_CODE_SIGN_FLAGS="--timestamp" \
             ONLY_ACTIVE_ARCH=NO
 
       - name: Create zip for Notarization

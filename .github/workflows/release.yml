@@ -47,6 +47,8 @@ jobs:
             --password "${{ secrets.APPLE_ID_PASSWORD }}" \
             --team-id "${{ secrets.APPLE_TEAM_ID }}" \
             --wait
+          echo "Waiting for notarization ticket to propagate..."
+          sleep 30
 
       - name: Staple notarization ticket
         run: |

@@ -3,6 +3,9 @@
 ## [v0.2.2](https://github.com/tokuhirom/ShotShot/compare/v0.2.1...v0.2.2) - 2026-02-14
 - Add detailed notarization logging to debug stapling failure by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/27
 
+## [v0.2.2](https://github.com/tokuhirom/ShotShot/compare/v0.2.1...v0.2.2) - 2026-02-14
+- Add detailed notarization logging to debug stapling failure by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/27
+
 ## [v0.2.1](https://github.com/tokuhirom/ShotShot/compare/v0.2.0...v0.2.1) - 2026-02-14
 - Fix notarization stapling by adding wait time by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/25
 

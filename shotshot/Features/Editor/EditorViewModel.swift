@@ -27,6 +27,9 @@ final class EditorViewModel {
     }
     var statusMessage: String = ""
 
+    /// Filename (without extension) generated at capture time, used to overwrite on Done.
+    private let initialFilename: String?
+
     // Undo/Redo stacks - stores both screenshot and annotations
     private struct EditorState {
         let screenshot: Screenshot
@@ -98,8 +101,9 @@ final class EditorViewModel {
         return expandedBounds != imageRect
     }
 
-    init(screenshot: Screenshot) {
+    init(screenshot: Screenshot, initialFilename: String? = nil) {
         self.screenshot = screenshot
+        self.initialFilename = initialFilename
         // Load previous settings from AppSettings
         let settings = AppSettings.shared
         self.selectedTool = ToolType.from(name: settings.selectedToolName)
@@ -492,14 +496,14 @@ final class EditorViewModel {
         let finalImage = renderFinalImage()
         let settings = AppSettings.shared
 
-        // Save to file
+        // Save to file (overwrite initial file if one was created at capture time)
         do {
             let finalScreenshot = Screenshot(
                 image: finalImage,
                 displayID: screenshot.displayID,
                 scaleFactor: screenshot.scaleFactor
             )
-            let url = try ImageExporter.save(finalScreenshot, to: settings.savePath)
+            let url = try ImageExporter.save(finalScreenshot, to: settings.savePath, filename: initialFilename)
             print("[EditorViewModel] Saved to: \(url.path)")
         } catch {
             print("[EditorViewModel] Save failed: \(error.localizedDescription)")

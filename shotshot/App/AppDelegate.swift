@@ -154,7 +154,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         do {
             let screenshot = try await captureManager.captureInteractively()
             print("[shotshot] Capture completed, showing editor...")
-            showEditor(with: screenshot)
+            let filename = saveInitialScreenshot(screenshot)
+            showEditor(with: screenshot, initialFilename: filename)
         } catch CaptureError.cancelled {
             print("[shotshot] Capture cancelled by user")
         } catch CaptureError.permissionDenied {
@@ -177,7 +178,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         do {
             let screenshot = try await captureManager.captureWithTimer(countdownSeconds: countdownSeconds)
             print("[shotshot] Timer capture completed, showing editor...")
-            showEditor(with: screenshot)
+            let filename = saveInitialScreenshot(screenshot)
+            showEditor(with: screenshot, initialFilename: filename)
         } catch CaptureError.cancelled {
             print("[shotshot] Timer capture cancelled by user")
         } catch CaptureError.permissionDenied {
@@ -234,7 +236,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         do {
             let screenshot = try await scrollCaptureManager.startScrollCapture()
             print("[shotshot] Scroll capture completed, showing editor...")
-            showEditor(with: screenshot)
+            let filename = saveInitialScreenshot(screenshot)
+            showEditor(with: screenshot, initialFilename: filename)
         } catch CaptureError.cancelled {
             print("[shotshot] Scroll capture cancelled by user")
         } catch CaptureError.permissionDenied {
@@ -246,8 +249,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    private func showEditor(with screenshot: Screenshot) {
-        let viewModel = EditorViewModel(screenshot: screenshot)
+    /// Saves the raw screenshot to file and clipboard immediately after capture.
+    /// Returns the generated filename (without extension) for later use when overwriting.
+    @discardableResult
+    private func saveInitialScreenshot(_ screenshot: Screenshot) -> String? {
+        let settings = AppSettings.shared
+        let filename = ImageExporter.generateFilename()
+        do {
+            let url = try ImageExporter.save(screenshot, to: settings.savePath, filename: filename)
+            print("[shotshot] Initial save to: \(url.path)")
+        } catch {
+            print("[shotshot] Initial save failed: \(error)")
+            return nil
+        }
+        ClipboardService.copy(screenshot.image)
+        return filename
+    }
+
+    private func showEditor(with screenshot: Screenshot, initialFilename: String? = nil) {
+        let viewModel = EditorViewModel(screenshot: screenshot, initialFilename: initialFilename)
         let editorView = EditorWindow(viewModel: viewModel)
 
         let window = NSWindow(

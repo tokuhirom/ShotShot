@@ -16,6 +16,8 @@ final class SelectionOverlayWindow: NSWindow {
     private var onCancel: (() -> Void)?
     private var overlayView: SelectionOverlayView?
     private var windowsUnderCursor: [WindowInfo] = []
+    // All on-screen windows in front-to-back z-order (used to check occlusion)
+    private var allWindowsZOrder: [(id: CGWindowID, frame: CGRect)] = []
     private var highlightedWindowRect: CGRect?
     private let screenFrame: CGRect
     private var localEventMonitor: Any?
@@ -152,7 +154,26 @@ final class SelectionOverlayWindow: NSWindow {
 
         // Get full screen size (exclude windows larger than this)
         let mainScreenFrame = NSScreen.main?.frame ?? screenFrame
+        let selfWindowID = CGWindowID(windowNumber)
 
+        // Build full z-order list (front-to-back) for occlusion checking.
+        // Includes all visible windows except our own overlay.
+        allWindowsZOrder = windowList.compactMap { info -> (id: CGWindowID, frame: CGRect)? in
+            guard let windowID = info[kCGWindowNumber as String] as? CGWindowID,
+                  let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat],
+                  let x = boundsDict["X"],
+                  let y = boundsDict["Y"],
+                  let width = boundsDict["Width"],
+                  let height = boundsDict["Height"],
+                  windowID != selfWindowID else {
+                return nil
+            }
+            let layer = info[kCGWindowLayer as String] as? Int ?? 0
+            guard layer >= 0 else { return nil }
+            return (id: windowID, frame: CGRect(x: x, y: y, width: width, height: height))
+        }
+
+        // Build filtered list of capture-worthy windows.
         windowsUnderCursor = windowList.compactMap { info -> WindowInfo? in
             guard let windowID = info[kCGWindowNumber as String] as? CGWindowID,
                   let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat],
@@ -165,7 +186,7 @@ final class SelectionOverlayWindow: NSWindow {
             }
 
             // Exclude the overlay window itself
-            if windowID == CGWindowID(windowNumber) {
+            if windowID == selfWindowID {
                 return nil
             }
 
@@ -198,11 +219,16 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     private func findWindowAt(screenPoint: CGPoint) -> WindowInfo? {
-        // Search windows in screen coordinates (top is 0)
-        for window in windowsUnderCursor where window.frame.contains(screenPoint) {
-            return window
+        // Find the topmost window in z-order at this point.
+        // CGWindowListCopyWindowInfo returns windows front-to-back, so the first
+        // hit in allWindowsZOrder is the actual frontmost window at this position.
+        guard let topmostID = allWindowsZOrder.first(where: { $0.frame.contains(screenPoint) })?.id else {
+            return nil
         }
-        return nil
+        // Only highlight if the frontmost window is one of our capture-worthy windows.
+        // This prevents highlighting a background window when a system UI element
+        // (menu bar extra, tooltip, etc.) is in front but excluded from the filtered list.
+        return windowsUnderCursor.first(where: { $0.id == topmostID })
     }
 
     private func convertToScreenCoordinates(_ windowPoint: CGPoint) -> CGPoint {

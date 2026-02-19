@@ -8,6 +8,14 @@
 - Fix window highlight showing wrong window when occluded by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/39
 - fix tagpr calver format by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/40
 
+## [v2026.219.0](https://github.com/tokuhirom/ShotShot/compare/v0.4.0...v2026.219.0) - 2026-02-19
+- Fix SelectionOverlayWindow remaining and blocking mouse events by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/35
+- Update tagpr and dependent actions to latest versions, enable calver by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/37
+- Save screenshot immediately after capture, overwrite on Done by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/34
+- Fix window highlight showing occluded background windows by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/38
+- Fix window highlight showing wrong window when occluded by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/39
+- fix tagpr calver format by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/40
+
 ## [v0.4.0](https://github.com/tokuhirom/ShotShot/compare/v0.3.1...v0.4.0) - 2026-02-14
 - Add app icon using camera.viewfinder SF Symbol by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/32
 

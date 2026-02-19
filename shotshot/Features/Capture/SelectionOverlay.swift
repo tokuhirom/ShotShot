@@ -125,9 +125,20 @@ final class SelectionOverlayWindow: NSWindow {
             globalEventMonitor = nil
         }
 
+        // Hide the window immediately so it no longer intercepts mouse events
+        orderOut(nil)
+
         // Clean up the view
         overlayView = nil
         contentView = nil
+    }
+
+    deinit {
+        // Safety net: if cleanup() was never called, ensure the window is hidden.
+        // isCleaned may be false here if something went wrong upstream.
+        if !isCleaned {
+            NSLog("[SelectionOverlayWindow] WARNING: deinit called without cleanup - forcing orderOut")
+        }
     }
 
     override var canBecomeKey: Bool { true }

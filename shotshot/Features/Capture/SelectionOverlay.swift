@@ -152,7 +152,13 @@ final class SelectionOverlayWindow: NSWindow {
 
         // Get full screen size (exclude windows larger than this)
         let mainScreenFrame = NSScreen.main?.frame ?? screenFrame
+        let selfWindowID = CGWindowID(windowNumber)
 
+        // Build list of capture-worthy windows (layer 0 only, front-to-back order).
+        // CGWindowListCopyWindowInfo returns windows front-to-back, so the first
+        // match in this list is always the frontmost normal window at a given point.
+        // Floating panels/toolbars (layer > 0) are intentionally excluded: if the
+        // cursor is over a floating window, we fall through to the normal window below.
         windowsUnderCursor = windowList.compactMap { info -> WindowInfo? in
             guard let windowID = info[kCGWindowNumber as String] as? CGWindowID,
                   let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat],
@@ -165,13 +171,15 @@ final class SelectionOverlayWindow: NSWindow {
             }
 
             // Exclude the overlay window itself
-            if windowID == CGWindowID(windowNumber) {
+            if windowID == selfWindowID {
                 return nil
             }
 
-            // Check window layer (normal windows are 0)
+            // Only capture normal windows (layer == 0).
+            // Floating panels, toolbars, etc. (layer > 0) are excluded so they
+            // don't get highlighted instead of the regular app window behind them.
             let layer = info[kCGWindowLayer as String] as? Int ?? 0
-            if layer < 0 || layer > 100 {
+            if layer != 0 {
                 return nil
             }
 
@@ -198,11 +206,11 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     private func findWindowAt(screenPoint: CGPoint) -> WindowInfo? {
-        // Search windows in screen coordinates (top is 0)
-        for window in windowsUnderCursor where window.frame.contains(screenPoint) {
-            return window
-        }
-        return nil
+        // windowsUnderCursor is in front-to-back z-order (layer 0 only).
+        // The first frame match is the frontmost normal window at this point.
+        // Floating windows (Aqua Voice, etc.) are not in the list, so the cursor
+        // naturally falls through to the normal window behind them.
+        return windowsUnderCursor.first(where: { $0.frame.contains(screenPoint) })
     }
 
     private func convertToScreenCoordinates(_ windowPoint: CGPoint) -> CGPoint {
@@ -231,7 +239,26 @@ final class SelectionOverlayWindow: NSWindow {
         let windowPoint = event.locationInWindow
         let screenPoint = convertToScreenCoordinates(windowPoint)
 
-        if let window = findWindowAt(screenPoint: screenPoint) {
+        let found = findWindowAt(screenPoint: screenPoint)
+
+        // Log only when the highlighted window changes
+        let newID = found?.id
+        let prevID = highlightedWindowRect == nil ? nil : windowsUnderCursor.first(where: {
+            convertWindowFrameToLocal($0.frame) == highlightedWindowRect
+        })?.id
+        if newID != prevID {
+            if let w = found {
+                NSLog("[SelectionOverlay] highlight -> id=%u owner=%@ name=%@ frame=%@",
+                      w.id,
+                      w.ownerName ?? "(nil)",
+                      w.name ?? "(nil)",
+                      "\(w.frame)")
+            } else {
+                NSLog("[SelectionOverlay] highlight -> nil")
+            }
+        }
+
+        if let window = found {
             let localRect = convertWindowFrameToLocal(window.frame)
             highlightedWindowRect = localRect
             overlayView?.highlightRect = localRect

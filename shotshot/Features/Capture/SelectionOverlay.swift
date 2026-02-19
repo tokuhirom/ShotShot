@@ -190,9 +190,11 @@ final class SelectionOverlayWindow: NSWindow {
                 return nil
             }
 
-            // Check window layer (normal windows are 0)
+            // Only capture normal windows (layer == 0).
+            // Floating panels, toolbars, etc. (layer > 0) are excluded so they
+            // don't get highlighted instead of the regular app window behind them.
             let layer = info[kCGWindowLayer as String] as? Int ?? 0
-            if layer < 0 || layer > 100 {
+            if layer != 0 {
                 return nil
             }
 
@@ -257,7 +259,26 @@ final class SelectionOverlayWindow: NSWindow {
         let windowPoint = event.locationInWindow
         let screenPoint = convertToScreenCoordinates(windowPoint)
 
-        if let window = findWindowAt(screenPoint: screenPoint) {
+        let found = findWindowAt(screenPoint: screenPoint)
+
+        // Log only when the highlighted window changes
+        let newID = found?.id
+        let prevID = highlightedWindowRect == nil ? nil : windowsUnderCursor.first(where: {
+            convertWindowFrameToLocal($0.frame) == highlightedWindowRect
+        })?.id
+        if newID != prevID {
+            if let w = found {
+                NSLog("[SelectionOverlay] highlight -> id=%u owner=%@ name=%@ frame=%@",
+                      w.id,
+                      w.ownerName ?? "(nil)",
+                      w.name ?? "(nil)",
+                      "\(w.frame)")
+            } else {
+                NSLog("[SelectionOverlay] highlight -> nil")
+            }
+        }
+
+        if let window = found {
             let localRect = convertWindowFrameToLocal(window.frame)
             highlightedWindowRect = localRect
             overlayView?.highlightRect = localRect

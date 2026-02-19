@@ -4,4 +4,4 @@
 	vPrefix = true
 	releaseBranch = main
 	versionFile = -
-	calver = true
+	calendarVersioning = true

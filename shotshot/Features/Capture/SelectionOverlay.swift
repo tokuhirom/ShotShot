@@ -16,6 +16,10 @@ final class SelectionOverlayWindow: NSWindow {
     private var onCancel: (() -> Void)?
     private var overlayView: SelectionOverlayView?
     private var windowsUnderCursor: [WindowInfo] = []
+    // All layer-0 windows in front-to-back z-order, without size/owner filtering.
+    // Used to detect occlusion: a large or excluded layer-0 window in front of
+    // another window must prevent that window from being highlighted.
+    private var normalWindowsZOrder: [(id: CGWindowID, frame: CGRect)] = []
     private var highlightedWindowRect: CGRect?
     private let screenFrame: CGRect
     private var localEventMonitor: Any?
@@ -154,11 +158,27 @@ final class SelectionOverlayWindow: NSWindow {
         let mainScreenFrame = NSScreen.main?.frame ?? screenFrame
         let selfWindowID = CGWindowID(windowNumber)
 
-        // Build list of capture-worthy windows (layer 0 only, front-to-back order).
-        // CGWindowListCopyWindowInfo returns windows front-to-back, so the first
-        // match in this list is always the frontmost normal window at a given point.
-        // Floating panels/toolbars (layer > 0) are intentionally excluded: if the
-        // cursor is over a floating window, we fall through to the normal window below.
+        // Build z-order list of all layer-0 windows (no size/owner filter).
+        // This is used for occlusion: a large or otherwise-excluded layer-0 window
+        // must still block windows behind it from being highlighted.
+        // Floating windows (layer > 0, e.g. Aqua Voice) are intentionally absent:
+        // the cursor should fall through them to the normal window below.
+        normalWindowsZOrder = windowList.compactMap { info -> (id: CGWindowID, frame: CGRect)? in
+            guard let windowID = info[kCGWindowNumber as String] as? CGWindowID,
+                  let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat],
+                  let x = boundsDict["X"],
+                  let y = boundsDict["Y"],
+                  let width = boundsDict["Width"],
+                  let height = boundsDict["Height"],
+                  windowID != selfWindowID else {
+                return nil
+            }
+            let layer = info[kCGWindowLayer as String] as? Int ?? 0
+            guard layer == 0 else { return nil }
+            return (id: windowID, frame: CGRect(x: x, y: y, width: width, height: height))
+        }
+
+        // Build list of capture-worthy windows (layer 0, size/owner filtered).
         windowsUnderCursor = windowList.compactMap { info -> WindowInfo? in
             guard let windowID = info[kCGWindowNumber as String] as? CGWindowID,
                   let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat],
@@ -170,14 +190,10 @@ final class SelectionOverlayWindow: NSWindow {
                 return nil
             }
 
-            // Exclude the overlay window itself
             if windowID == selfWindowID {
                 return nil
             }
 
-            // Only capture normal windows (layer == 0).
-            // Floating panels, toolbars, etc. (layer > 0) are excluded so they
-            // don't get highlighted instead of the regular app window behind them.
             let layer = info[kCGWindowLayer as String] as? Int ?? 0
             if layer != 0 {
                 return nil
@@ -206,11 +222,14 @@ final class SelectionOverlayWindow: NSWindow {
     }
 
     private func findWindowAt(screenPoint: CGPoint) -> WindowInfo? {
-        // windowsUnderCursor is in front-to-back z-order (layer 0 only).
-        // The first frame match is the frontmost normal window at this point.
-        // Floating windows (Aqua Voice, etc.) are not in the list, so the cursor
-        // naturally falls through to the normal window behind them.
-        return windowsUnderCursor.first(where: { $0.frame.contains(screenPoint) })
+        // Find the topmost layer-0 window at this point using the unfiltered z-order list.
+        guard let topmostID = normalWindowsZOrder.first(where: { $0.frame.contains(screenPoint) })?.id else {
+            return nil
+        }
+        // Only highlight if that window is capture-worthy.
+        // If it's excluded (too large, system owner, etc.) return nil rather than
+        // falling through to a window behind it.
+        return windowsUnderCursor.first(where: { $0.id == topmostID })
     }
 
     private func convertToScreenCoordinates(_ windowPoint: CGPoint) -> CGPoint {

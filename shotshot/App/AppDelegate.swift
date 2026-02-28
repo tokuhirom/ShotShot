@@ -24,6 +24,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         setupTimerSettingsObserver()
     }
 
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard let url = urls.first else { return }
+        switch url.host {
+        case "capture":
+            Task { await startCapture() }
+        case "capture-timer":
+            Task { await startTimerCapture() }
+        case "record":
+            Task { await startRecording() }
+        case "scroll-capture":
+            Task { await startScrollCapture() }
+        case "settings":
+            openSettings()
+        default:
+            break
+        }
+    }
+
     private func setupHotkeyChangeObserver() {
         NotificationCenter.default.addObserver(
             forName: .hotkeySettingsChanged,

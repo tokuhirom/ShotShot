@@ -32,5 +32,14 @@
 	<string>NSApplication</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>ShotShot needs access to screen recording to take screenshots.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>shotshot</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

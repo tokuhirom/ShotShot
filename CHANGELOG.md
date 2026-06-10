@@ -1,5 +1,9 @@
 # Changelog
 
+## [v2026.610.1](https://github.com/tokuhirom/ShotShot/compare/v2026.610.0...v2026.610.1) - 2026-06-10
+- Fix: exclude ShotShot's own windows from screenshot capture by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/49
+- Update GitHub Actions to Node.js 24 compatible versions by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/51
+
 ## [v2026.610.0](https://github.com/tokuhirom/ShotShot/compare/v2026.304.0...v2026.610.0) - 2026-06-10
 - Add launch at login setting by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/47
 

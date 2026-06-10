@@ -1,5 +1,8 @@
 # Changelog
 
+## [v2026.610.0](https://github.com/tokuhirom/ShotShot/compare/v2026.304.0...v2026.610.0) - 2026-06-10
+- Add launch at login setting by @tokuhirom in https://github.com/tokuhirom/ShotShot/pull/47
+
 ## [v2026.304.0](https://github.com/tokuhirom/ShotShot/compare/v2026.225.0...v2026.304.0) - 2026-03-04
 - Add URL scheme support for deep linking by @statditto in https://github.com/tokuhirom/ShotShot/pull/45
 

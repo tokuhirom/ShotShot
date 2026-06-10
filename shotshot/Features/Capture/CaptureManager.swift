@@ -258,7 +258,9 @@ final class CaptureManager {
         }
         print("[CaptureManager] Found display: \(display.displayID)")
 
-        let filter = SCContentFilter(display: display, excludingWindows: [])
+        let ownBundleID = Bundle.main.bundleIdentifier ?? ""
+        let ownWindows = content.windows.filter { $0.owningApplication?.bundleIdentifier == ownBundleID }
+        let filter = SCContentFilter(display: display, excludingWindows: ownWindows)
 
         let scaleFactor = Int(selection.scaleFactor)
         let config = SCStreamConfiguration()

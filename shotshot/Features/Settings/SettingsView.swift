@@ -36,6 +36,8 @@ struct GeneralSettingsView: View {
 
                 Toggle("settings.copy_to_clipboard", isOn: $viewModel.copyToClipboard)
 
+                Toggle("settings.launch_at_login", isOn: $viewModel.launchAtLogin)
+
                 HStack {
                     Text("settings.timer_seconds")
                     Stepper(value: $viewModel.timerSeconds, in: 1...10) {

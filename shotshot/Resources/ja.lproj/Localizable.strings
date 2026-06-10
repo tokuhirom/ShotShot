@@ -73,6 +73,7 @@
 "settings.update_hotkey" = "ホットキーを更新";
 "settings.hotkey_invalid" = "無効なキーです";
 "settings.hotkey_updated" = "ホットキーを更新しました";
+"settings.launch_at_login" = "ログイン時に起動";
 
 /* Editor */
 "editor.line_width" = "太さ";

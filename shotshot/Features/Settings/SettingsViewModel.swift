@@ -1,6 +1,7 @@
 import AppKit
 import Carbon
 import Foundation
+import ServiceManagement
 import SwiftUI
 
 extension Notification.Name {
@@ -19,6 +20,20 @@ final class SettingsViewModel {
 
     var copyToClipboard: Bool {
         didSet { settings.copyToClipboard = copyToClipboard }
+    }
+
+    var launchAtLogin: Bool {
+        didSet {
+            do {
+                if launchAtLogin {
+                    try SMAppService.mainApp.register()
+                } else {
+                    try SMAppService.mainApp.unregister()
+                }
+            } catch {
+                launchAtLogin = !launchAtLogin
+            }
+        }
     }
 
     var timerSeconds: Int {
@@ -51,6 +66,7 @@ final class SettingsViewModel {
         self.savePath = settings.savePath
         self.copyToClipboard = settings.copyToClipboard
         self.timerSeconds = settings.timerSeconds
+        self.launchAtLogin = SMAppService.mainApp.status == .enabled
 
         let modifiers = settings.hotkeyModifiers
         self.useControl = modifiers & UInt32(NSEvent.ModifierFlags.control.rawValue) != 0

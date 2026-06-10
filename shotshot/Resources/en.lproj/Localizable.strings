@@ -73,6 +73,7 @@
 "settings.update_hotkey" = "Update Hotkey";
 "settings.hotkey_invalid" = "Invalid key.";
 "settings.hotkey_updated" = "Hotkey updated.";
+"settings.launch_at_login" = "Launch at login";
 
 /* Editor */
 "editor.line_width" = "Line width";
